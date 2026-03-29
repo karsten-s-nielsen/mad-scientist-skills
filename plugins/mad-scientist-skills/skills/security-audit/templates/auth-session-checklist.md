@@ -189,7 +189,7 @@ Token request includes:
 - Use a well-tested auth library (Passport.js, django-allauth, NextAuth.js) — don't roll your own
 - Hash passwords with bcrypt (cost 12+) or argon2id — never use fast hashes
 - Regenerate session IDs on login, re-authentication, and privilege changes
-- Validate JWT signatures with explicit algorithm whitelist
+- Validate JWT signatures with explicit algorithm allowlist
 - Use `HttpOnly` + `Secure` + `SameSite` cookies for token storage
 - Implement account lockout with exponential backoff
 - Log all auth events (login success/failure, password change, token refresh) for monitoring

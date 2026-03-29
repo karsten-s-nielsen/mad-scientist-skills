@@ -4,6 +4,15 @@
 
 Answer: "Can all users — regardless of ability, device, or demographic background — use this interface effectively?"
 
+## Pre-audit checklist
+
+Before auditing, identify:
+
+- [ ] The target WCAG conformance level (A, AA, or AAA)
+- [ ] Whether the interface has been tested with a screen reader
+- [ ] The primary input methods (mouse, keyboard, touch, voice)
+- [ ] Any known demographic or regional user groups
+
 ## WCAG 2.1 AA Checklist (Automated + Manual)
 
 The Web Content Accessibility Guidelines (WCAG) 2.1 Level AA is the widely accepted baseline for accessibility. This checklist covers the most impactful criteria with framework-specific audit patterns.

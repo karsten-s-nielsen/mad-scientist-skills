@@ -1,5 +1,7 @@
 # NOTICE
 
+> See [README.md](README.md) for project overview, installation, and usage.
+
 mad-scientist-skills
 Copyright 2026 Karsten S. Nielsen
 

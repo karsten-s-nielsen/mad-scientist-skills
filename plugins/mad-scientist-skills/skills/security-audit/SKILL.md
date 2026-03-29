@@ -15,6 +15,8 @@ A comprehensive security skill with two modes and two tiers:
 - **Standard** — free tools, code-level patterns, open-source scanners. Always actionable for any developer.
 - **Enterprise** — paid services (WAF, SIEM, DAST/SAST), compliance tooling. Serves as a professional checklist documenting what enterprise teams should implement.
 
+**Core question:** "Is this system defensible?"
+
 ## When to use this skill
 
 - When the user says "security audit", "threat model", "check for vulnerabilities", "review security", or "harden this"
@@ -43,7 +45,7 @@ Every finding must be assigned a severity:
 
 | Severity | Criteria | Action | SLA |
 |----------|----------|--------|-----|
-| **Critical** | Actively exploitable, data breach risk, auth bypass, RCE | Fix immediately before any deployment | Block release |
+| **Critical** | Actively exploitable, data breach risk, auth bypass, RCE | Fix immediately | Block release |
 | **High** | Significant risk but requires specific conditions (SSRF, SQL injection, privilege escalation) | Fix before next release | 1 sprint |
 | **Medium** | Defense-in-depth gaps, missing headers, verbose errors, weak crypto | Schedule fix | 2 sprints |
 | **Low** | Informational, best practice deviations, minor hardening opportunities | Track in backlog | Best effort |
@@ -54,7 +56,7 @@ Execute all applicable phases in order. Skip phases marked for a mode you are no
 
 ---
 
-### Phase 0: Real-Time Code Patterns (Audit mode)
+### Phase 0: Anti-Pattern Scan (Audit mode)
 
 Fast grep-based scan for dangerous code patterns. Runs first to catch obvious security issues before deeper analysis. These patterns are absorbed from the Anthropic `security-guidance` hook and expanded with additional checks.
 
@@ -357,7 +359,7 @@ Check for the following headers and controls in application code, middleware con
 | Cookie `SameSite` flag | Prevents CSRF via cross-site cookie sending | High | Same |
 | TLS 1.2+ enforcement | Prevents downgrade attacks | High | Server config, SSL context, load balancer policy |
 | HSTS preload | Domain added to browser preload list | Low | `includeSubDomains; preload` in HSTS header |
-| CORS origin whitelist | Restricts cross-origin access | High | `Access-Control-Allow-Origin` must not be `*` for authenticated endpoints |
+| CORS origin allowlist | Restricts cross-origin access | High | `Access-Control-Allow-Origin` must not be `*` for authenticated endpoints |
 
 **Framework-specific locations:**
 
@@ -662,7 +664,7 @@ For each applicable regulation: document which requirements apply, current compl
 
 ---
 
-### Phase 11: Monitoring and Incident Response (Both modes)
+### Phase 11: Monitoring & Incident Response (Both modes)
 
 Evaluate the system's ability to detect and respond to security incidents:
 
@@ -771,6 +773,8 @@ Present concrete findings with fix status:
 | 1 | Critical | A03 Injection | src/db.py:42 | CWE-89 | SQL string concatenation | Fixed |
 | 2 | High | Secrets | .env | - | API key committed to repo | Fixed |
 
+> **Schema note:** The base columns (#, Severity, Phase, File:Line, Description, Status) are shared across all audit skills. The CWE column is specific to security-audit.
+
 ### Infrastructure Findings
 | # | Severity | Resource | File:Line | Issue | Status |
 |---|----------|----------|-----------|-------|--------|
@@ -807,7 +811,7 @@ Present concrete findings with fix status:
 
 ## Important rules
 
-- **Fix as you go.** When audit mode finds a Critical or High issue that you can fix, fix it immediately. Don't just report — remediate.
+- **Fix as you go.** Don't just report — remediate. Fix Critical and High issues during the audit.
 - **Evidence-based claims.** Every finding must include file path, line number, or specific evidence. Never say "probably vulnerable."
 - **CWE references.** Every code vulnerability finding must include at least one CWE identifier.
 - **No assumptions.** Read the actual code, configs, and IaC files. Don't assume security controls exist because a framework is used.

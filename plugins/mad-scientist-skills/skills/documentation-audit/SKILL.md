@@ -78,7 +78,7 @@ Determine which mode to operate in based on the project state:
 | Documentation files exist | **Audit** | Concrete artifacts to evaluate |
 | Docs exist + "redesign the doc structure" | **Both** | Audit current state, plan improvements |
 
-When in doubt, ask the user. If both modes apply, run all phases.
+When in doubt, ask the user. If both modes apply, run all 10 phases.
 
 ## Severity classification
 
@@ -95,7 +95,7 @@ Every finding must be assigned a severity based on documentation impact:
 
 Execute all applicable phases in order. Skip phases marked for a mode you are not running. Do NOT skip applicable phases. Do NOT claim completion without evidence.
 
-**Phase order:** 0 &rarr; 1 &rarr; 2 &rarr; 3 &rarr; 4 &rarr; 5 &rarr; 6 &rarr; 7 &rarr; 8 &rarr; 9
+**Phase order:** 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
 
 ---
 
@@ -156,7 +156,7 @@ Explore the project to understand its documentation surface:
 - Identify the documentation tech stack (Sphinx, MkDocs, Docusaurus, plain markdown, etc.)
 - Map **audiences**: who reads these docs? (first-time user, regular developer, contributor, operator/admin)
 - Identify **core user tasks**: the 3-5 things readers primarily come to the docs to do
-- Assess **documentation maturity**: none &rarr; minimal (README only) &rarr; partial (some guides) &rarr; comprehensive (structured doc set)
+- Assess **documentation maturity**: none → minimal (README only) → partial (some guides) → comprehensive (structured doc set)
 - Catalog the **constraint landscape**: what determines scope (API surface, feature count, audience breadth, team size)
 - Note **documentation conventions** already in use (admonition styles, code annotation patterns, section templates)
 - Check for existing style guide or documentation standards (Vale config, markdownlint config, custom rules)
@@ -286,7 +286,7 @@ Load `templates/linguistic-rules.md` for the full Strunk & White, Google, and Mi
 | Positive form: "not" where direct antonym exists; hedges: "not very", "not often" | Strunk & White Rule 11 | Medium |
 | Specific/concrete language: flag "various", "several", "aspects", "issues", "things" without referents | Strunk & White Rule 12 | Medium |
 | Parallel construction in lists: mixed gerunds, infinitives, and noun phrases | Strunk & White Rule 15 | Medium |
-| Conditions before instructions: "Run X if Y" &rarr; "If Y, run X" | Google Style Guide | Medium |
+| Conditions before instructions: "Run X if Y" → "If Y, run X" | Google Style Guide | Medium |
 | Second person: use "you" for instructions, not "we" or "the user" | Google Style Guide | Low |
 | Tense consistency within sections | Strunk & White Rule 17 | Low |
 | Sentence length: >26 words flagged for translation accessibility | Google Style Guide | Low |
@@ -710,6 +710,8 @@ Present concrete findings with documentation impact assessment:
 | 1 | Critical | Phase 6 | README.md | Missing entirely — no project documentation entry point | Repo Architecture | Open |
 | 2 | High | Phase 4 | tutorial.md:42 | Tutorial ends without a working result — contract violation | Diataxis (Tutorial); Lemov (Begin with the End) | Recommended |
 
+> **Schema note:** The base columns (#, Severity, Phase, File:Line, Description, Status) are shared across all audit skills. The Framework column is specific to documentation-audit and cognitive-interface-audit.
+
 ### Diataxis Classification
 | Document | Assigned Quadrant | Pollution? | Issues |
 |----------|------------------|------------|--------|
@@ -771,7 +773,7 @@ These techniques from Lemov's observation framework govern *how* the auditor wor
 
 ## Important rules
 
-- **Fix as you go.** When audit mode finds a Critical or High issue that you can fix, fix it immediately. Don't just report — remediate.
+- **Fix as you go.** Don't just report — remediate. Fix Critical and High issues during the audit.
 - **Evidence-based claims.** Every finding must include file path, line number, or specific evidence. Never say "users will find this confusing" without identifying the specific cognitive mechanism.
 - **Framework attribution.** Each finding references the specific framework that identifies it (Strunk & White, Diataxis, CLT, Lemov, Pirolli & Card, Carroll). This distinguishes a documentation audit from generic editorial feedback.
 - **Right Is Right.** Do not "round up" findings. If documentation is approximately correct but missing specifics a reader needs to act, that is a finding.

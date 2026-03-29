@@ -4,6 +4,15 @@
 
 Answer: "Does the interface provide sufficient visual information for the user to maintain situation awareness and complete tasks efficiently?"
 
+## Pre-audit checklist
+
+Before auditing, identify:
+
+- [ ] Which system state changes are user-initiated vs. automatic
+- [ ] The feedback mechanisms for each user action (visual, auditory, haptic)
+- [ ] Whether the interface shows real-time collaborative or automated updates
+- [ ] The latency profile of key operations (instant, <1s, >1s, >10s)
+
 ## Gergle's Grounding Theory
 
 Darren Gergle's research (CollabLab, Northwestern; CHI Academy 2026) demonstrates that shared visual information affects task performance through two distinct mechanisms:

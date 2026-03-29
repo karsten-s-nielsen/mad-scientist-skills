@@ -4,6 +4,15 @@
 
 Answer: "Does this documentation teach effectively, or does it merely present information?"
 
+## Pre-audit checklist
+
+Before auditing, identify:
+
+- [ ] The reader's expected prior knowledge for each document
+- [ ] Which documents are procedural (tutorials, how-tos) vs. reference
+- [ ] Whether verification commands exist after complex procedures
+- [ ] The reading order assumed by the documentation
+
 Documentation that merely describes a system is an encyclopedia. Documentation that teaches is a curriculum. This template provides frameworks from instructional design research to audit whether documentation builds competence or just transfers text.
 
 ## Carroll's Minimalism (1990)

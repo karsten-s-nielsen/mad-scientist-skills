@@ -4,6 +4,15 @@
 
 Answer: "Does this documentation meet readers where they are — not where the author assumes they are?"
 
+## Pre-audit checklist
+
+Before auditing, identify:
+
+- [ ] The primary audience segments (newcomer, regular user, contributor, operator)
+- [ ] Domain-specific terms used in the documentation
+- [ ] Whether a glossary exists
+- [ ] The navigation structure and entry points
+
 ## Expert Blind Spot Audit (Hinds 1999)
 
 Experts systematically underestimate task difficulty for novices. In documentation, this manifests as:

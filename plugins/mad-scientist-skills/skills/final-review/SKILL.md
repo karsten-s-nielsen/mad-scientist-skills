@@ -38,15 +38,22 @@ Review all source code as a professional software architect:
 - **Dependencies**: Unused dependencies, outdated versions with known vulnerabilities
 - **Tests**: Coverage gaps, missing edge cases, outdated test assertions
 
-For a deeper security analysis including STRIDE threat modeling, infrastructure hardening, supply chain audit, and secrets scanning, run the `security-audit` skill from this plugin.
+For deeper analysis, run the specialized audit skills from this plugin:
+
+- **`security-audit`** — STRIDE threat modeling, infrastructure hardening, supply chain audit, secrets scanning
+- **`observability-audit`** — logging, metrics, tracing, alerting, SLI/SLO coverage
+- **`optimization-audit`** — algorithm efficiency, database queries, caching, concurrency, cloud cost
+- **`cognitive-interface-audit`** — usability, mental model alignment, cognitive load, accessibility (if UI exists)
+- **`documentation-audit`** — linguistic precision, structural taxonomy, audience calibration, completeness
 
 For each issue found, categorize by severity:
 
 | Severity | Action | Examples |
 |----------|--------|---------|
 | **Critical** | Must fix before commit | Security vulnerability, broken functionality, data loss risk |
-| **Warning** | Should fix before commit | Inconsistent patterns, missing error handling, poor naming |
-| **Info** | Note for future | Minor style inconsistency, potential optimization |
+| **High** | Should fix before commit | Inconsistent patterns, missing error handling, poor naming |
+| **Medium** | Note for future | Minor style inconsistency, potential optimization |
+| **Low** | Track in backlog | Best practice deviation, minor polish |
 
 ### Phase 3: Documentation Review
 
@@ -117,16 +124,16 @@ Present a structured summary to the user:
 ### Issues Found
 | # | Severity | File | Issue | Status |
 |---|----------|------|-------|--------|
-| 1 | Warning | src/api.ts:42 | Missing error handler on async route | Fixed |
-| 2 | Warning | README.md | Outdated install command | Fixed |
-| 3 | Info | src/utils.ts:15 | Could extract to shared helper | Noted |
+| 1 | High | src/api.ts:42 | Missing error handler on async route | Fixed |
+| 2 | High | README.md | Outdated install command | Fixed |
+| 3 | Low | src/utils.ts:15 | Could extract to shared helper | Noted |
 
 ### Ready to commit: Yes / No (with blockers)
 ```
 
 ## Important rules
 
-- **Fix as you go.** Don't just report issues — fix Critical and Warning items during the review.
+- **Fix as you go.** Don't just report — remediate. Fix Critical and High issues during the review.
 - **Evidence-based claims.** Every "up to date" claim must come from actually reading the file and comparing to code.
 - **No assumptions.** Read the actual files. Don't assume README is correct because it existed before your changes.
 - **Architecture diagram is mandatory.** Every final review produces or updates `architecture.html`.

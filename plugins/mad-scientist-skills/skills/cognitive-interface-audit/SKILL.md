@@ -82,7 +82,7 @@ Determine which mode to operate in based on the project state:
 | UI code exists (Streamlit, React, HTML, Gradio, etc.) | **Audit** | Concrete interface to evaluate |
 | Both code and a request to "redesign the workflow" | **Both** | Audit current state, plan improvements |
 
-When in doubt, ask the user. If both modes apply, run all phases.
+When in doubt, ask the user. If both modes apply, run all 10 phases.
 
 ## Severity classification
 
@@ -90,7 +90,7 @@ Every finding must be assigned a severity based on cognitive impact:
 
 | Severity | Criteria | Action | SLA |
 |----------|----------|--------|-----|
-| **Critical** | Users cannot complete core tasks. Systematic mental model mismatch — the interface's workflow contradicts how users think about the task. No error recovery path exists for common mistakes | Fix immediately before shipping | Block release |
+| **Critical** | Users cannot complete core tasks. Systematic mental model mismatch — the interface's workflow contradicts how users think about the task. No error recovery path exists for common mistakes | Fix immediately | Block release |
 | **High** | Users frequently make errors or abandon tasks. Significant cognitive overhead on primary workflows. Error recovery exists but is non-obvious or lossy | Fix before next release | 1 sprint |
 | **Medium** | Users succeed but with unnecessary friction. Inconsistent patterns cause momentary confusion. Error recovery works but requires extra steps | Schedule fix | 2 sprints |
 | **Low** | Minor polish, best practice deviation, or optimization for power users. Does not impede task completion | Track in backlog | Best effort |
@@ -99,11 +99,11 @@ Every finding must be assigned a severity based on cognitive impact:
 
 Execute all applicable phases in order. Skip phases marked for a mode you are not running. Do NOT skip applicable phases. Do NOT claim completion without evidence.
 
-**Phase order:** 0 &rarr; 1 &rarr; 2 &rarr; 3 &rarr; 4 &rarr; 5 &rarr; 6 &rarr; 7 &rarr; 8 &rarr; 9
+**Phase order:** 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
 
 ---
 
-### Phase 0: UI Anti-Pattern Scan (Audit mode)
+### Phase 0: Anti-Pattern Scan (Audit mode)
 
 Fast grep-based scan for common cognitive interface anti-patterns. Runs first to catch obvious issues before deeper analysis. Each match requires manual review — some patterns are intentional in specific contexts.
 
@@ -743,6 +743,8 @@ Present concrete findings with cognitive impact assessment:
 | 1 | Critical | Phase 4 | pages/edit.py:42 | Destructive action without confirmation — no Prevention or Detection layer | Wood L1/L3 | Fixed |
 | 2 | High | Phase 2 | pages/search.py:18 | Search workflow requires 6 sequential decisions — exceeds cognitive load threshold | NASA-TLX | Recommended |
 
+> **Schema note:** The base columns (#, Severity, Phase, File:Line, Description, Status) are shared across all audit skills. The Framework column is specific to cognitive-interface-audit and documentation-audit.
+
 ### Task Model Assessment
 | Core Task | Model Alignment | Expertise Coverage | Issues |
 |-----------|----------------|-------------------|--------|
@@ -794,7 +796,7 @@ Present concrete findings with cognitive impact assessment:
 
 ## Important rules
 
-- **Fix as you go.** When audit mode finds a Critical or High issue that you can fix in code (anti-pattern, missing feedback, inconsistency), fix it immediately. Don't just report — remediate.
+- **Fix as you go.** Don't just report — remediate. Fix Critical and High issues during the audit.
 - **Evidence-based claims.** Every finding must include file path, line number, or specific evidence. Never say "users probably find this confusing" without identifying the specific cognitive mechanism (SRK level, defense layer, load type).
 - **User-centered, not developer-centered.** Evaluate the interface from the user's perspective, not the developer's. "It works" is not the same as "users can complete their task efficiently and without errors."
 - **Expertise spectrum awareness.** Every task model finding must consider the full spectrum (kiosk to power user). A feature that delights power users may paralyze first-timers.

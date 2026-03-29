@@ -44,7 +44,7 @@ Every finding must be assigned a severity:
 
 | Severity | Criteria | Action | SLA |
 |----------|----------|--------|-----|
-| **Critical** | Causes outages, OOM crashes, connection exhaustion, quadratic algorithms on user-facing paths, unbounded memory growth | Fix immediately before any deployment | Block release |
+| **Critical** | Causes outages, OOM crashes, connection exhaustion, quadratic algorithms on user-facing paths, unbounded memory growth | Fix immediately | Block release |
 | **High** | Measurable performance degradation >2x expected; N+1 queries, missing indexes on production queries, no connection pooling, missing compression | Fix before next release | 1 sprint |
 | **Medium** | Suboptimal but functional; oversized resources, missing caching, debug logging in production, suboptimal serialization | Schedule fix | 2 sprints |
 | **Low** | Best practice deviation; naming conventions, minor allocation patterns, potential micro-optimizations | Track in backlog | Best effort |
@@ -186,7 +186,7 @@ if not new_ids:
     return
 ```
 
-**Expected impact:** No-op runs that currently take 5-36 minutes per pipeline drop to <30 seconds (just the existence check).
+**Expected impact:** No-op runs that take 5-36 minutes per pipeline drop to <30 seconds (just the existence check).
 
 **Audit instruction:** For every ingestion module (not compute/analytics), verify that this pattern or an equivalent exists. If the pipeline unconditionally re-downloads and re-writes on every scheduled run, flag it as High severity. Count the total HTTP requests, `df.count()` calls, and Delta writes that occur on a no-op run and include these numbers in the finding.
 
@@ -942,6 +942,8 @@ Present concrete findings with fix status and ROI estimates:
 | 2 | High | Phase 5 | src/db.py:18 | Missing index on orders.user_id (full table scan) | Low effort / High gain | Fixed |
 | 3 | Medium | Phase 6 | src/views.py:55 | Repeated API call without caching | Medium effort / Medium gain | Recommended |
 
+> **Schema note:** The base columns (#, Severity, Phase, File:Line, Description, Status) are shared across all audit skills. The ROI (Effort/Gain) column is specific to optimization-audit.
+
 ### Quick Wins (fix in < 30 minutes, significant gain)
 | # | Finding | Estimated Impact | Fix |
 |---|---------|-----------------|-----|
@@ -990,7 +992,7 @@ If the project's ROADMAP or planning docs describe optimization strategies not y
 
 ## Important rules
 
-- **Fix as you go.** When audit mode finds a Critical or High issue that you can fix, fix it immediately. Don't just report — remediate. Add missing indexes, enable compression, fix N+1 queries.
+- **Fix as you go.** Don't just report — remediate. Fix Critical and High issues during the audit. Add missing indexes, enable compression, fix N+1 queries.
 - **Evidence-based claims.** Every finding must include file path, line number, or specific evidence. Never say "probably slow."
 - **Quantify impact.** Optimization is relative, not binary. Every finding should estimate the impact: "N+1 adds ~200ms/page" not just "N+1 found." Use Big-O analysis, EXPLAIN output, or measurement to back up claims.
 - **ROI-oriented.** Findings must estimate effort vs impact. Quick wins (5 min fix, 10x gain) are prioritized over structural changes (multi-sprint, 2x gain).

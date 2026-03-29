@@ -4,6 +4,15 @@
 
 Answer: "Is each document the right type, and does it stay in its lane?"
 
+## Pre-audit checklist
+
+Before classifying, identify:
+
+- [ ] All documentation files and their apparent purpose
+- [ ] Whether the project uses an explicit documentation framework
+- [ ] Which documents are user-facing vs. internal/development
+- [ ] Any non-quadrant types needed (README, changelog, ADR, troubleshooting)
+
 Diataxis (Procida, 2017+) organizes documentation along two axes: **study vs. work** (the user's context) and **practical vs. theoretical** (the knowledge type). Every document should occupy exactly one quadrant. When a document drifts into a neighboring quadrant, it serves neither purpose well — this is **quadrant pollution**.
 
 **Important:** Not all documents are Diataxis documents. READMEs, CHANGELOGs, ADRs, troubleshooting guides, migration guides, and FAQs are **non-quadrant types** (see Good Docs Project Extensions below). Do NOT classify them into a Diataxis quadrant or flag them for quadrant pollution. A README that contains tutorial steps, reference tables, and explanatory context is doing its job as a gateway document — evaluate it against the Good Docs Project README template, not against Diataxis purity rules.

@@ -24,8 +24,6 @@ When the user asks for:
 - Deployment or dynamic interaction diagrams
 - Codebase architecture overview
 
-For a lightweight alternative that uses PlantUML C4 syntax directly (any Java version, server fallback for no-Java environments), see the `c4-plantuml` skill.
-
 ## How to use this skill
 
 1. **Understand the system.** Read relevant code, configs, and docs to understand the architecture. If the user describes a system verbally, capture the key elements.
@@ -72,6 +70,7 @@ Always use these exact names. Do not prefix with the project name or use upperca
 Every Structurizr DSL file is wrapped in a `workspace` block containing `model` and `views`:
 
 ```
+# Structurizr DSL
 workspace "Name" "Description" {
 
     model {
@@ -88,11 +87,13 @@ workspace "Name" "Description" {
 ### People
 
 ```
+# Structurizr DSL
 <identifier> = person "Name" "Description" "Tags"
 ```
 
 Example:
 ```
+# Structurizr DSL
 user = person "End User" "A user of the system who places orders"
 admin = person "Administrator" "Manages configuration and users"
 ```
@@ -100,11 +101,13 @@ admin = person "Administrator" "Manages configuration and users"
 ### Software systems
 
 ```
+# Structurizr DSL
 <identifier> = softwareSystem "Name" "Description" "Tags"
 ```
 
 Example:
 ```
+# Structurizr DSL
 system = softwareSystem "My System" "Core business system that handles orders"
 email = softwareSystem "Email Service" "Sendgrid" "External"
 idp = softwareSystem "Identity Provider" "Auth0" "External"
@@ -113,11 +116,13 @@ idp = softwareSystem "Identity Provider" "Auth0" "External"
 ### Containers (nested inside a software system)
 
 ```
+# Structurizr DSL
 <identifier> = container "Name" "Description" "Technology" "Tags"
 ```
 
 Example:
 ```
+# Structurizr DSL
 system = softwareSystem "My System" "Handles orders" {
     spa = container "Web App" "Delivers the user experience via the browser" "React, TypeScript"
     api = container "API Service" "Handles business logic, exposes REST endpoints" "Node.js, Express"
@@ -130,11 +135,13 @@ system = softwareSystem "My System" "Handles orders" {
 ### Components (nested inside a container)
 
 ```
+# Structurizr DSL
 <identifier> = component "Name" "Description" "Technology" "Tags"
 ```
 
 Example:
 ```
+# Structurizr DSL
 api = container "API Service" "Handles business logic" "Node.js, Express" {
     authMw = component "Auth Middleware" "Validates JWT tokens" "Express Middleware"
     userCtrl = component "User Controller" "Handles /api/users/* requests" "Express Router"
@@ -148,11 +155,13 @@ api = container "API Service" "Handles business logic" "Node.js, Express" {
 Relationships are defined using the `->` operator:
 
 ```
+# Structurizr DSL
 <source> -> <destination> "Description" "Technology"
 ```
 
 Example:
 ```
+# Structurizr DSL
 user -> system "Uses" "HTTPS"
 system -> email "Sends notifications" "SMTP/API"
 api -> db "Reads from and writes to" "SQL/TCP"
@@ -163,6 +172,7 @@ Relationships can be defined:
 - Inside element scope (implicitly from that element)
 
 ```
+# Structurizr DSL
 system = softwareSystem "My System" {
     api = container "API" "Business logic" "Node.js" {
         -> db "Reads/writes" "SQL"    // implicitly from api
@@ -175,12 +185,14 @@ system = softwareSystem "My System" {
 Tags control styling. Built-in tags: `Element`, `Person`, `Software System`, `Container`, `Component`, `Relationship`. Custom tags are added as the last parameter or via `tags`:
 
 ```
+# Structurizr DSL
 db = container "Database" "Stores data" "PostgreSQL" "Database"
 queue = container "Queue" "Message transport" "RabbitMQ" "Queue"
 ```
 
 Or using the `tags` keyword inside scope:
 ```
+# Structurizr DSL
 db = container "Database" "Stores data" "PostgreSQL" {
     tags "Database"
 }
@@ -195,6 +207,7 @@ Views are defined in the `views` block. Each view selects elements from the mode
 #### System Context view
 
 ```
+# Structurizr DSL
 systemContext <softwareSystem> "key" {
     include *
     autoLayout
@@ -204,6 +217,7 @@ systemContext <softwareSystem> "key" {
 #### Container view
 
 ```
+# Structurizr DSL
 container <softwareSystem> "key" {
     include *
     autoLayout
@@ -213,6 +227,7 @@ container <softwareSystem> "key" {
 #### Component view
 
 ```
+# Structurizr DSL
 component <container> "key" {
     include *
     autoLayout
@@ -222,6 +237,7 @@ component <container> "key" {
 #### Dynamic view
 
 ```
+# Structurizr DSL
 dynamic <scope> "key" {
     user -> spa "Submits order form"
     spa -> api "POST /api/orders"
@@ -241,6 +257,7 @@ The `<scope>` can be:
 #### Deployment view
 
 ```
+# Structurizr DSL
 deployment <softwareSystem> <environment> "key" {
     include *
     autoLayout
@@ -252,6 +269,7 @@ deployment <softwareSystem> <environment> "key" {
 Deployment elements are defined inside the `model` block:
 
 ```
+# Structurizr DSL
 model {
     // ... elements ...
 
@@ -276,6 +294,7 @@ model {
 For infrastructure elements that aren't container instances:
 
 ```
+# Structurizr DSL
 deploymentNode "Public Subnet" "Internet-facing" "VPC" {
     infrastructureNode "Load Balancer" "Routes traffic, terminates TLS" "AWS ALB"
 }
@@ -286,6 +305,7 @@ deploymentNode "Public Subnet" "Internet-facing" "VPC" {
 Place containers from the model into deployment nodes:
 
 ```
+# Structurizr DSL
 containerInstance <containerIdentifier>
 ```
 
@@ -306,6 +326,7 @@ containerInstance <containerIdentifier>
 Styles are defined in the `views` block:
 
 ```
+# Structurizr DSL
 views {
     // ... view definitions ...
 
@@ -395,15 +416,7 @@ WAR_URL=$(curl -s https://docs.structurizr.com/binaries | grep -oP 'https://down
 curl -L -o ~/.claude/tools/structurizr.war "$WAR_URL"
 ```
 
-If the binaries page is unavailable, use the known URL directly (update the version as needed):
-
-```bash
-# Windows (PowerShell):
-Invoke-WebRequest -Uri "https://download.structurizr.com/structurizr-2026.02.01.war" -OutFile "$env:USERPROFILE\.claude\tools\structurizr.war"
-
-# macOS/Linux:
-curl -L -o ~/.claude/tools/structurizr.war "https://download.structurizr.com/structurizr-2026.02.01.war"
-```
+If the binaries page is unavailable, find the current `.war` download URL at https://docs.structurizr.com/binaries and substitute it into the curl/Invoke-WebRequest command above.
 
 The file is saved as `structurizr.war` (without version in the filename) for simpler commands.
 
@@ -501,7 +514,7 @@ Then **ask the user** whether to:
 1. Install Java now (guide through installation, then continue with local rendering)
 2. Cancel and save the `.dsl` file only (they can render later with any Structurizr-compatible tool)
 
-**Note:** There is no server fallback for this skill. Structurizr's export command is a Java tool. If the user cannot install Java 21+, save the `.dsl` file and inform them it can be rendered with any tool that supports Structurizr DSL. Alternatively, use the `c4-plantuml` skill which has a PlantUML server fallback for no-Java environments.
+**Note:** There is no server fallback for this skill. Structurizr's export command is a Java tool. If the user cannot install Java 21+, save the `.dsl` file and inform them it can be rendered with any tool that supports Structurizr DSL (e.g., the Structurizr web editor at structurizr.com).
 
 ### Important notes
 
@@ -788,6 +801,7 @@ The HTML viewer uses **pill-style tabs** for navigation with the **DSL source as
 Save the complete Structurizr DSL workspace in a `.dsl` file alongside the HTML:
 
 ```
+# Structurizr DSL
 workspace "System Name" "Core description" {
 
     model {

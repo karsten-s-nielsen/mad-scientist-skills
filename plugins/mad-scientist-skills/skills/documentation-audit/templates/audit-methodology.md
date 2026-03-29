@@ -4,6 +4,14 @@
 
 This template codifies HOW to conduct an effective documentation audit — not what to check (that's in the SKILL.md phases) but how to observe, record, and analyze findings with methodological rigor. Derived from Lemov's instructional techniques (*Teach Like a Champion 3.0*, 2021), adapted for documentation auditing.
 
+## Pre-audit checklist
+
+Before starting, define:
+
+- [ ] The specific questions this audit must answer (Exit Ticket)
+- [ ] The 3 most likely documentation failures for this project type (Plan for Error)
+- [ ] The pass sequence order (structure first, then language, then pedagogy)
+
 **This template is portable** — it can be loaded by any audit skill (security-audit, optimization-audit, cognitive-interface-audit, observability-audit) to improve audit execution quality.
 
 ## Exemplar Planning (Lemov #1)

@@ -4,6 +4,15 @@
 
 Answer: "When users make errors — and they will — does the interface prevent, detect, and recover from them effectively at every stage?"
 
+## Pre-audit checklist
+
+Before auditing, identify:
+
+- [ ] The destructive or irreversible actions in the interface
+- [ ] The most common user errors reported or observed
+- [ ] Which inputs accept free-form text vs. constrained choices
+- [ ] Whether undo/redo is available and at what granularity
+
 ## Wood & Byrne 7-Layer Defense Framework
 
 Scott D. Wood's extension of GOMS to error prediction (dissertation, University of Michigan, 2000; published with Mike Byrne, CogSci 2002) provides a systematic framework for designing error-tolerant interfaces. Each layer corresponds to a stage in the lifecycle of an erroneous performance.

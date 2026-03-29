@@ -4,6 +4,14 @@
 
 Answer: "Does every sentence earn its place?"
 
+## Pre-audit checklist
+
+Before auditing, identify:
+
+- [ ] Whether the project has an existing style guide or Vale config
+- [ ] The target audience's expected reading level
+- [ ] Which documents are user-facing (subject to style checks) vs. internal (exempt)
+
 This reference provides grep-testable patterns for common linguistic anti-patterns in technical documentation. Rules are drawn from three authoritative sources:
 
 1. **Strunk & White** — *The Elements of Style* (rules of composition and word usage)

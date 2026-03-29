@@ -19,7 +19,7 @@ Before auditing, identify:
 
 ### Content-Security-Policy (CSP)
 
-**Purpose:** Prevents XSS by whitelisting allowed script, style, image, and frame sources.
+**Purpose:** Prevents XSS by allowlisting allowed script, style, image, and frame sources.
 
 **Minimum viable policy:**
 ```
@@ -156,7 +156,7 @@ openssl s_client -connect example.com:443 -tls1_2
 
 **Rules:**
 - Never use `Access-Control-Allow-Origin: *` for authenticated endpoints
-- Whitelist specific origins, don't reflect the `Origin` header blindly
+- Allowlist specific origins, don't reflect the `Origin` header blindly
 - Set `Access-Control-Allow-Credentials: true` only with explicit origin (not `*`)
 - Restrict `Access-Control-Allow-Methods` to only needed methods
 - Set `Access-Control-Max-Age` to cache preflight responses

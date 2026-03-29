@@ -4,6 +4,15 @@
 
 Answer: "Is the interface consuming more working memory than the task inherently requires?"
 
+## Pre-audit checklist
+
+Before auditing, identify:
+
+- [ ] The screens or views with the highest information density
+- [ ] Which tasks require users to hold intermediate results in memory
+- [ ] The number of simultaneous options presented at key decision points
+- [ ] Whether progressive disclosure is used anywhere in the interface
+
 ## Sweller's Cognitive Load Theory (CLT)
 
 John Sweller's cognitive load theory (1988) distinguishes three types of load. The audit's primary target is **extraneous load** — cognitive overhead caused by poor design rather than inherent task complexity.

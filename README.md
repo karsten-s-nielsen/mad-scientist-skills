@@ -2,19 +2,30 @@
 
 ![Mad Scientist Skills](assets/mad-scientist.jpg)
 
-A collection of specialized [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills for software architecture, cognitive interface auditing, security auditing, observability auditing, optimization auditing, documentation auditing, and pre-commit quality gates.
+[![CI](https://github.com/karstenskyt/mad-scientist-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/karstenskyt/mad-scientist-skills/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/badge/version-1.12.1-blue)](CHANGELOG.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+[Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills are slash-command capabilities that extend Claude Code with specialized knowledge. Install this plugin to get 7 skills for architecture diagramming, code security analysis, performance optimization, observability assessment, documentation evaluation, cognitive interface review, and pre-commit quality checks.
 
 ## Skills
 
 | Skill | Description | Invoke |
 |-------|-------------|--------|
-| **c4** | C4 architecture diagrams using Structurizr DSL — self-contained HTML with embedded SVGs | `/mad-scientist-skills:c4` |
-| **cognitive-interface-audit** | Single-tier cognitive interface audit — GOMS, Norman's Gulfs, Wood 7-layer error tolerance, Gergle visual grounding, NASA-TLX, Dual-Process Theory, Cleveland & McGill, Trust Calibration, Information Foraging, Gestalt, Ecological Interface Design, accessibility | `/mad-scientist-skills:cognitive-interface-audit` |
-| **documentation-audit** | Single-tier documentation audit — Diataxis structural taxonomy, Strunk & White linguistic precision, Google/Microsoft style guides, Cognitive Load Theory, Carroll's Minimalism, Lemov instructional techniques, information foraging, audience calibration | `/mad-scientist-skills:documentation-audit` |
-| **final-review** | Pre-commit quality gate — code review, documentation check, and architecture diagram generation | `/mad-scientist-skills:final-review` |
-| **observability-audit** | Two-tier observability audit (Standard/Enterprise) — instrumentation, logging, metrics, tracing, pipeline/ML monitoring, alerting, SLIs/SLOs (beta) | `/mad-scientist-skills:observability-audit` |
-| **optimization-audit** | Single-tier optimization audit — algorithm efficiency, database queries, caching, concurrency, pipelines, distributed execution, cloud cost, profiling | `/mad-scientist-skills:optimization-audit` |
-| **security-audit** | Two-tier security audit (Standard/Enterprise) — STRIDE, OWASP Top 10, ML/AI model security, AI regulatory compliance, infrastructure hardening, supply chain | `/mad-scientist-skills:security-audit` |
+| **c4** | Generate interactive C4 architecture diagrams as self-contained HTML | `/mad-scientist-skills:c4` |
+| **cognitive-interface-audit** | Find usability problems, mental model gaps, cognitive overload, and accessibility violations | `/mad-scientist-skills:cognitive-interface-audit` |
+| **documentation-audit** | Evaluate documentation quality, structure, clarity, completeness, and audience fit | `/mad-scientist-skills:documentation-audit` |
+| **final-review** | Pre-commit quality gate with code review, documentation check, and architecture diagram | `/mad-scientist-skills:final-review` |
+| **observability-audit** | Assess monitoring maturity across logging, metrics, tracing, alerting, and SLI/SLO coverage | `/mad-scientist-skills:observability-audit` |
+| **optimization-audit** | Find performance bottlenecks in algorithms, queries, caching, concurrency, and cloud cost | `/mad-scientist-skills:optimization-audit` |
+| **security-audit** | Identify vulnerabilities via threat modeling, code scanning, dependency audit, and infrastructure review | `/mad-scientist-skills:security-audit` |
+
+## Prerequisites
+
+- **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)** — the AI coding assistant this plugin extends. Install it first.
+- **Java 21+** — required only by the c4 skill for local Structurizr/PlantUML rendering. Both `structurizr.war` and `plantuml.jar` are auto-downloaded on first use. All other skills have no external dependencies.
+
+> **Safety note:** All audit skills perform read-only analysis — they scan your code and produce a findings report but do not modify files. Only `final-review` and `c4` produce output files (`architecture.html`, `architecture.dsl`).
 
 ## Installation
 
@@ -30,14 +41,46 @@ Install the plugin:
 /plugin install mad-scientist-skills@mad-scientist-skills
 ```
 
-## Prerequisites
+Verify by invoking any skill:
 
-- **Java 21+** — required by the c4 skill for local Structurizr/PlantUML rendering. Both `structurizr.war` and `plantuml.jar` are auto-downloaded on first use.
+```
+/mad-scientist-skills:security-audit
+```
+
+To uninstall:
+
+```
+/plugin uninstall mad-scientist-skills@mad-scientist-skills
+```
+
+**Troubleshooting:**
+- **"Unknown command /plugin"** — update Claude Code to the latest version (plugin support is required).
+- **Marketplace add fails** — check your internet connection. The marketplace name must be exactly `karsten-s-nielsen/mad-scientist-skills`.
+- **Plugin install fails** — try removing and re-adding the marketplace, then install again.
+
+## Quick Start
+
+Run a security audit on your current project:
+
+```
+/mad-scientist-skills:security-audit
+```
+
+Or ask naturally: *"Run a security audit on this project"*
+
+Each audit skill scans your codebase phase-by-phase and produces a severity-rated findings report:
+
+| # | Severity | Phase | File:Line | Description | Status |
+|---|----------|-------|-----------|-------------|--------|
+| 1 | High | Phase 4 | src/auth.py:42 | Hardcoded credential in source code | Open |
+| 2 | Medium | Phase 3 | Dockerfile:1 | Container running as root user | Open |
+
+Critical and High issues are fixed during the audit when possible. The full report includes a maturity rating and deployment readiness assessment.
 
 ## Skill Details
 
 <details>
-<summary><strong>c4</strong> — C4 Architecture Diagrams</summary>
+<summary><strong>c4</strong> — C4 Architecture Diagrams (rendering pipeline, diagram types, templates)</summary>
 
 Generates interactive, self-contained HTML architecture diagrams using the [C4 model](https://c4model.com/) and [Structurizr DSL](https://docs.structurizr.com/dsl).
 
@@ -51,7 +94,7 @@ A single HTML file with:
 - Tabbed navigation between C4 diagram levels
 - Embedded SVGs (no CDN or runtime dependencies)
 - Copyable Structurizr DSL source panel
-- Dark theme — just open in a browser
+- Dark theme — open in any browser
 
 A companion `.dsl` source file for version control.
 
@@ -65,9 +108,23 @@ A companion `.dsl` source file for version control.
 | **Dynamic** | Numbered interaction flows for specific scenarios |
 | **Deployment** | Infrastructure, cloud regions, subnets, and scaling |
 
+### Without Java
+
+If Java 21+ is not available, the skill saves the `.dsl` source file. You can render it later with any Structurizr-compatible tool, including the [Structurizr web editor](https://structurizr.com).
+
 ### Assembler script
 
 Includes `c4_assemble.py` — cleans rendered SVGs and assembles them into the HTML viewer. Auto-detects views from SVG filenames and verifies each SVG is clean before embedding.
+
+### Templates
+
+| Template | Purpose |
+|----------|---------|
+| `system-context.md` | System Context diagram (Level 1) — people, systems, dependencies |
+| `container.md` | Container diagram (Level 2) — applications, databases, protocols |
+| `component.md` | Component diagram (Level 3) — internal container structure |
+| `dynamic.md` | Dynamic diagram — numbered interaction flows |
+| `deployment.md` | Deployment diagram — infrastructure, cloud regions, scaling |
 
 ### Usage
 
@@ -80,9 +137,9 @@ Ask naturally ("Create a C4 diagram for this project") or invoke directly:
 </details>
 
 <details>
-<summary><strong>cognitive-interface-audit</strong> — Cognitive Interface Audit</summary>
+<summary><strong>cognitive-interface-audit</strong> — Cognitive Interface Audit (coverage, frameworks, templates)</summary>
 
-Two-mode, single-tier cognitive interface analysis: **planning** (before UI) and **audit** (existing UI). Grounded in seven academic research threads: GOMS task modeling (Card, Moran & Newell), error-tolerant design (Wood & Byrne), visual grounding theory (Gergle, Kraut & Fussell), Norman's Gulfs of Execution/Evaluation, Dual-Process Theory (Kahneman), Cleveland & McGill visual encoding effectiveness, Lee & See Trust Calibration, Pirolli & Card Information Foraging, Gestalt principles (Wertheimer), and Vicente & Rasmussen Ecological Interface Design.
+Two-mode, single-tier cognitive interface analysis: **planning** (before UI) and **audit** (existing UI). Grounded in seven academic research threads: task modeling and error tolerance (GOMS, Wood & Byrne, Rasmussen), visual grounding (Gergle, Kraut & Fussell), cognitive load (Sweller, Kahneman), gulf analysis (Norman), information foraging (Pirolli & Card), trust calibration (Lee & See), and ecological interface design (Vicente & Rasmussen). Also applies Cleveland & McGill visual encoding, Gestalt perceptual principles, and WCAG 2.1 AA accessibility standards.
 
 ### Coverage
 
@@ -94,7 +151,7 @@ Two-mode, single-tier cognitive interface analysis: **planning** (before UI) and
 | 3 | Consistency & convention | | x |
 | 4 | Error tolerance (Wood 7-layer defense, Rasmussen SRK) | x | x |
 | 5 | Cognitive load assessment (NASA-TLX, Sweller CLT) | x | x |
-| 6 | Visual grounding, feedback & constraint visibility (Gergle grounding theory, Vicente & Rasmussen EID) | | x |
+| 6 | Visual grounding, feedback & interpretation (Gergle grounding theory, Vicente & Rasmussen EID) | | x |
 | 7 | Accessibility & inclusion (WCAG 2.1 AA, demographic bias) | | x |
 | 8 | Information architecture | | x |
 | 9 | Findings report | x | x |
@@ -120,7 +177,7 @@ Ask naturally ("Audit the UI for this project", "Check usability", "Mental model
 </details>
 
 <details>
-<summary><strong>documentation-audit</strong> — Single-Tier Documentation Audit</summary>
+<summary><strong>documentation-audit</strong> — Single-Tier Documentation Audit (coverage, frameworks, templates)</summary>
 
 Two-mode, single-tier documentation analysis: **planning** (before docs exist) and **audit** (existing docs). Grounded in seven research threads: classical composition (Strunk & White), enterprise style standards (Google/Microsoft), structural taxonomy (Diataxis, Good Docs Project), Cognitive Load Theory (Sweller, Chandler & Sweller), minimalist instruction (Carroll), instructional techniques (Lemov), and information foraging (Pirolli & Card).
 
@@ -161,16 +218,17 @@ Ask naturally ("Audit the docs", "Documentation review", "Check doc quality") or
 </details>
 
 <details>
-<summary><strong>final-review</strong> — Pre-Commit Quality Gate</summary>
+<summary><strong>final-review</strong> — Pre-Commit Quality Gate (review phases, severity levels)</summary>
 
 Reviews your entire project before you commit.
 
 ### What it does
 
-1. **Code quality review** — consistency, best practices, dead code, type safety, security
-2. **Documentation review** — ensures README, CLAUDE.md, and API docs match the actual code
-3. **Architecture diagram** — generates or updates `architecture.html` using the c4 skill
-4. **Verification summary** — structured report with issues found, fixes applied, and commit readiness
+1. **Codebase discovery** — reads project docs, identifies tech stack and architecture
+2. **Code quality review** — consistency, best practices, dead code, type safety, security
+3. **Documentation review** — ensures README, CLAUDE.md, and API docs match the actual code
+4. **Architecture diagram** — generates or updates `architecture.html` using the c4 skill
+5. **Verification summary** — structured report with issues found, fixes applied, and commit readiness
 
 ### Usage
 
@@ -183,9 +241,11 @@ Ask naturally ("Final review", "Check everything before commit") or invoke direc
 </details>
 
 <details>
-<summary><strong>observability-audit</strong> — Two-Tier Observability Audit (beta)</summary>
+<summary><strong>observability-audit</strong> — Two-Tier Observability Audit (coverage, tiers, templates)</summary>
 
 Two-mode, two-tier observability analysis: **planning** (before code) and **audit** (existing code/infra). Each phase has **Standard** (free/open-source tools) and **Enterprise** (paid observability platforms) tiers.
+
+> **Standard vs Enterprise tier:** Some skills offer two tiers. Standard uses free/open-source tools and is always actionable. Enterprise lists paid platform recommendations (Datadog, Splunk, etc.) as an aspirational checklist.
 
 ### Coverage
 
@@ -228,7 +288,7 @@ Ask naturally ("Audit observability for this project", "Design telemetry strateg
 </details>
 
 <details>
-<summary><strong>optimization-audit</strong> — Single-Tier Optimization Audit</summary>
+<summary><strong>optimization-audit</strong> — Single-Tier Optimization Audit (coverage, phases, templates)</summary>
 
 Two-mode, single-tier optimization analysis: **planning** (before code) and **audit** (existing code/infra). Single tier because optimization tools are overwhelmingly free/open-source (profilers, EXPLAIN, load testers, linters).
 
@@ -276,7 +336,7 @@ Ask naturally ("Optimization audit this project", "Find bottlenecks", "Performan
 </details>
 
 <details>
-<summary><strong>security-audit</strong> — Two-Tier Security Audit</summary>
+<summary><strong>security-audit</strong> — Two-Tier Security Audit (coverage, tiers, templates)</summary>
 
 Two-mode, two-tier security analysis: **planning** (before code) and **audit** (existing code/infra). Each phase has **Standard** (free tools) and **Enterprise** (paid services) tiers.
 
@@ -284,10 +344,10 @@ Two-mode, two-tier security analysis: **planning** (before code) and **audit** (
 
 | Phase | Area | Planning | Audit |
 |-------|------|:--------:|:-----:|
-| 0 | Real-time code pattern scanning (incl. ML deserialization) | | x |
+| 0 | Anti-pattern scanning (incl. ML deserialization) | | x |
 | 1 | Security surface mapping | x | x |
 | 2 | STRIDE threat modeling (incl. cross-organizational boundaries) | x | |
-| 3 | Infrastructure hardening (incl. confidential computing) | | x |
+| 3 | Infrastructure security (incl. confidential computing) | | x |
 | 4 | OWASP Top 10 code scanning | | x |
 | 4b | ML/AI model security (serialization, provenance, poisoning) | | x |
 | 5 | Web security headers | | x |
@@ -322,22 +382,59 @@ Ask naturally ("Security audit this project", "Threat model the API") or invoke 
 
 ## Architecture
 
-Open [`architecture.html`](architecture.html) in a browser to explore the C4 architecture diagrams (System Context, Container). The companion [`architecture.dsl`](architecture.dsl) contains the Structurizr DSL source.
+Open [`architecture.html`](architecture.html) in a browser to explore the C4 architecture diagrams — a tabbed, dark-themed viewer with embedded SVGs for System Context and Container levels. The companion [`architecture.dsl`](architecture.dsl) contains the Structurizr DSL source for version control.
 
 ## Adding Skills
 
-Create a directory under `plugins/mad-scientist-skills/skills/`:
+To extend the plugin with your own skill:
+
+1. Create a directory under `plugins/mad-scientist-skills/skills/`:
 
 ```
 plugins/mad-scientist-skills/skills/
-└── my-new-skill/
-    ├── SKILL.md          ← skill definition
-    └── templates/        ← optional supporting templates
+  my-new-skill/
+    SKILL.md          # Skill definition (see CONTRIBUTING.md for format)
+    templates/        # Optional supporting templates
 ```
 
-The skill is available via `/mad-scientist-skills:my-new-skill` on any machine with the plugin installed.
+2. Write `SKILL.md` with YAML frontmatter (`name`, `description`) and the skill body. See any existing skill for the pattern.
 
-## Giving Back
+3. Commit, push, and re-install the plugin for the skill to be available:
+
+```
+/plugin uninstall mad-scientist-skills@mad-scientist-skills
+/plugin install mad-scientist-skills@mad-scientist-skills
+```
+
+The skill is then available via `/mad-scientist-skills:my-new-skill`.
+
+## Glossary
+
+<details>
+<summary>Expand term definitions</summary>
+
+| Term | Definition |
+|------|-----------|
+| **C4 model** | A four-level approach to architecture diagramming: Context, Container, Component, Code ([c4model.com](https://c4model.com/)) |
+| **Claude Code skill** | A slash-command capability bundled in a Claude Code plugin. Skills extend Claude Code with specialized knowledge and workflows |
+| **Cognitive Load Theory** | Framework for managing how much information a reader must hold in working memory (Sweller 1988) |
+| **Diataxis** | Documentation framework classifying content into four types: Tutorial, How-To, Reference, Explanation ([diataxis.fr](https://diataxis.fr)) |
+| **GOMS** | Goals, Operators, Methods, Selection rules — a model for predicting how users accomplish tasks (Card, Moran & Newell 1983) |
+| **Information Foraging** | Theory of how users follow navigation cues to find information, analogous to animals foraging for food (Pirolli & Card 1999) |
+| **Norman's Gulfs** | The Gulf of Execution (gap between intent and interface) and Gulf of Evaluation (gap between system state and understanding) |
+| **OWASP Top 10** | The ten most critical web application security risks ([owasp.org/Top10](https://owasp.org/Top10/)) |
+| **SLI / SLO** | Service Level Indicator (a measured metric) and Service Level Objective (a target for that metric) — core reliability engineering concepts |
+| **STRIDE** | Threat modeling framework: Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege |
+| **Structurizr DSL** | Text-based notation for defining C4 architecture diagrams ([docs.structurizr.com/dsl](https://docs.structurizr.com/dsl)) |
+| **Two-tier audit** | Some skills offer Standard (free tools) and Enterprise (paid platforms) tiers with different recommendations |
+
+</details>
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, skill file format, and PR process.
+
+## Support
 
 > *"En Del Af Noget Større"* (A Part of Something Bigger)
 

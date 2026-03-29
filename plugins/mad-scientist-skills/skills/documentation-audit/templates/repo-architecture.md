@@ -4,6 +4,14 @@
 
 Answer: "Does this repository have the documentation infrastructure users and contributors expect?"
 
+## Pre-audit checklist
+
+Before auditing, identify:
+
+- [ ] Which essential files exist at the repo root (README, LICENSE, CONTRIBUTING, SECURITY, CHANGELOG)
+- [ ] Whether the project is versioned and has release history
+- [ ] The public API surface (endpoints, CLI commands, config options)
+
 ## Essential Files
 
 ### README.md

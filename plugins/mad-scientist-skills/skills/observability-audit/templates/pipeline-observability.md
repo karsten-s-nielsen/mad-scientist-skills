@@ -115,7 +115,7 @@ Track test results over time to detect flaky tests and quality regressions:
 
 ### dbt Fusion Native OTLP (Preview)
 
-dbt Fusion (the Rust-based dbt runtime) includes native OpenTelemetry trace export. When available, this will emit spans for each model and test execution without custom instrumentation. This is currently in preview — track the dbt Fusion release notes for GA availability. Consider it a future option rather than a production-ready solution today.
+dbt Fusion (the Rust-based dbt runtime) includes native OpenTelemetry trace export. When available, this will emit spans for each model and test execution without custom instrumentation. This is in preview as of March 2026 — track the dbt Fusion release notes for GA availability. Consider it a future option rather than a production-ready solution today.
 
 ---
 

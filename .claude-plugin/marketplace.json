@@ -8,7 +8,7 @@
     {
       "name": "mad-scientist-skills",
       "description": "C4 architecture diagrams (Structurizr DSL), cognitive interface auditing (GOMS task models, Norman's Gulfs, Wood 7-layer error tolerance, Gergle visual grounding, NASA-TLX cognitive load, Dual-Process Theory, Cleveland & McGill visual encoding, Trust Calibration, Information Foraging, Gestalt principles, Ecological Interface Design, accessibility), two-tier security auditing (STRIDE, OWASP Top 10, ML/AI model security, AI regulatory compliance, web headers, API security, auth/session, supply chain, confidential computing, privacy-preserving computation), two-tier observability auditing (beta: instrumentation, logging, metrics, tracing, pipeline/ML monitoring, alerting, SLIs/SLOs), optimization auditing (algorithm efficiency, database queries, caching, concurrency, pipelines, distributed execution, cloud cost, profiling), documentation auditing (Diataxis structural taxonomy, Strunk & White linguistic precision, Google/Microsoft style guide compliance, Cognitive Load Theory pedagogical scaffolding, Carroll's Minimalism, Lemov instructional techniques, information foraging, audience calibration, content freshness), and pre-commit quality gate with architecture diagram generation",
-      "version": "1.12.0",
+      "version": "1.12.1",
       "author": {
         "name": "Karsten S. Nielsen"
       },

@@ -4,6 +4,16 @@
 
 Answer: "Does the interface's task structure match how users actually think about their tasks?"
 
+## Pre-audit checklist
+
+Before auditing, identify:
+
+- [ ] The 3-5 primary user tasks this interface supports
+- [ ] The user expertise spectrum (novice to expert) for each task
+- [ ] Which tasks are performed frequently vs. rarely
+- [ ] Any task sequences that require cross-screen coordination
+- [ ] The current error rate or user complaint patterns (if available)
+
 ## GOMS Framework Reference
 
 GOMS (Goals, Operators, Methods, Selection rules) — Card, Moran & Newell, 1983. A computational framework for modeling human task decomposition in interfaces.

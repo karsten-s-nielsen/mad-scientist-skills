@@ -3,7 +3,7 @@ name: observability-audit
 description: Comprehensive observability audit with two modes and two tiers (beta). Planning mode designs telemetry strategy, SLIs/SLOs, and instrumentation architecture. Audit mode scans code and infrastructure for observability gaps including logging, metrics, tracing, alerting, pipeline monitoring, and ML model drift detection. Each phase has Standard (free/open-source tools, always actionable) and Enterprise (paid observability platforms, aspirational checklist) tiers. Use when asked to "observability audit", "check monitoring", "find blind spots", "audit telemetry", "design observability", or "review instrumentation".
 ---
 
-# Observability Audit (beta)
+# Observability Audit
 
 A comprehensive observability skill with two modes and two tiers:
 
@@ -14,6 +14,8 @@ A comprehensive observability skill with two modes and two tiers:
 **Tiers** (applied within each phase):
 - **Standard** — free/open-source tools, code-level patterns, OpenTelemetry-native. Always actionable for any developer.
 - **Enterprise** — paid observability platforms (Datadog, New Relic, Splunk, etc.). Serves as a professional checklist documenting what enterprise teams should implement.
+
+**Core question:** "Can you see what your system is doing?"
 
 ## When to use this skill
 
@@ -44,7 +46,7 @@ Every finding must be assigned a severity:
 
 | Severity | Criteria | Action | SLA |
 |----------|----------|--------|-----|
-| **Critical** | Complete blind spot on a critical path, no alerting on user-facing failures, silent data loss, no error tracking | Fix immediately before any deployment | Block release |
+| **Critical** | Complete blind spot on a critical path, no alerting on user-facing failures, silent data loss, no error tracking | Fix immediately | Block release |
 | **High** | Missing tracing on key services, no SLOs on critical endpoints, unstructured logging in production, no correlation IDs | Fix before next release | 1 sprint |
 | **Medium** | Incomplete metric coverage, missing dashboard drill-downs, no log rotation, weak sampling strategy | Schedule fix | 2 sprints |
 | **Low** | Naming convention inconsistencies, missing metadata labels, dashboard cosmetic issues, documentation gaps | Track in backlog | Best effort |
@@ -665,6 +667,8 @@ Present concrete findings with fix status:
 | 1 | Critical | Phase 0 | src/api.py:42 | print() used instead of structured logging | Fixed |
 | 2 | High | Phase 5 | src/service.py:18 | HTTP call without trace context propagation | Fixed |
 
+> **Schema note:** The base columns (#, Severity, Phase, File:Line, Description, Status) are shared across all audit skills. Other skills add domain-specific columns (e.g., CWE for security-audit, Framework for documentation-audit).
+
 ### SLI/SLO Assessment
 | Service | SLIs Defined | SLOs Documented | Error Budget Tracked | Gap |
 |---------|-------------|----------------|---------------------|-----|
@@ -705,7 +709,7 @@ Present concrete findings with fix status:
 
 ## Important rules
 
-- **Fix as you go.** When audit mode finds a Critical or High issue that you can fix, fix it immediately. Don't just report — remediate.
+- **Fix as you go.** Don't just report — remediate. Fix Critical and High issues during the audit.
 - **Evidence-based claims.** Every finding must include file path, line number, or specific evidence. Never say "probably missing monitoring."
 - **No assumptions.** Read the actual code, configs, and infrastructure files. Don't assume observability exists because a framework is used.
 - **Verify fixes.** After fixing an observability gap, re-run the check that found it to confirm the fix works.
