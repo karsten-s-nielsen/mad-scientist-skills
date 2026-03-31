@@ -343,6 +343,53 @@ Wayne, H. (2023). "My Problem With the Four-Document Model."
 hillelwayne.com.
 Critique: Diataxis framework limitations and gaps.
 
+## architecture-audit
+
+Cockburn, A. (2005). "Hexagonal Architecture." alistair.cockburn.us/
+hexagonal-architecture/
+Framework: Ports and Adapters (driving/driven port distinction,
+dependency inversion at application boundaries).
+
+Evans, E. (2003). *Domain-Driven Design: Tackling Complexity in the
+Heart of Software.* Addison-Wesley.
+Framework: Bounded Contexts, Ubiquitous Language, Aggregates,
+strategic and tactical DDD patterns.
+
+Vernon, V. (2013). *Implementing Domain-Driven Design.* Addison-Wesley.
+Framework: Aggregate design rules, Context Mapping patterns.
+
+Martin, R.C. (2017). *Clean Architecture: A Craftsman's Guide to
+Software Structure and Design.* Prentice Hall.
+Framework: The Dependency Rule, four concentric rings (Entities,
+Use Cases, Interface Adapters, Frameworks & Drivers).
+
+Martin, R.C. (2000s). SOLID Principles. Single Responsibility,
+Open/Closed, Liskov Substitution, Interface Segregation,
+Dependency Inversion.
+
+Hohpe, G. & Woolf, B. (2003). *Enterprise Integration Patterns:
+Designing, Building, and Deploying Messaging Solutions.*
+Addison-Wesley.
+Framework: Splitter, Aggregator, Content-Based Router, Pipes and
+Filters, Claim Check.
+
+Constantine, L.L. & Yourdon, E. (1979). *Structured Design:
+Fundamentals of a Discipline of Computer Program and Systems
+Design.* Prentice-Hall.
+Framework: Coupling and cohesion classification.
+
+Young, G. (2010). "CQRS Documents." cqrs.files.wordpress.com/
+2010/11/cqrs_documents.pdf
+Framework: Command Query Responsibility Segregation, Event Sourcing.
+
+Wiggins, A. (2011). "The Twelve-Factor App." 12factor.net/
+Framework: Twelve principles for portable, resilient cloud-native
+applications.
+
+Nygard, M. (2011). "Documenting Architecture Decisions."
+cognitect.com/blog/2011/11/15/documenting-architecture-decisions
+Framework: Architectural Decision Records (ADRs).
+
 ## c4
 
 Brown, S. (2018-present). "The C4 Model for Visualising Software

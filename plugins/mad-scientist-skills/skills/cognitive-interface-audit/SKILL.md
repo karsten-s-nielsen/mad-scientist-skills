@@ -55,6 +55,7 @@ This skill synthesizes seven research threads into a single audit methodology:
 - Hutchins, *Cognition in the Wild* (1995) — distributed cognition
 - Vicente & Rasmussen, "Ecological Interface Design: Theoretical Foundations" (*IEEE SMC*, 1992) — EID
 - Burns & Hajdukiewicz, *Ecological Interface Design* (CRC Press, 2004)
+- Evans, *Domain-Driven Design: Tackling Complexity in the Heart of Software* (Addison-Wesley, 2003) — Ubiquitous Language
 - Miller, "The Magical Number Seven, Plus or Minus Two" (*Psychological Review*, 1956) — working memory limits
 - Cowan, "The Magical Number 4 in Short-Term Memory" (*Behavioral and Brain Sciences*, 2001) — revised Miller's 7±2 to ~4 chunks
 - Nielsen, "10 Usability Heuristics for User Interface Design" (1994)
@@ -316,6 +317,26 @@ Apply Gestalt principles (Wertheimer 1923) as explicit consistency diagnostics. 
 | **Figure-Ground** | Can the user distinguish interactive elements from background? | Low-contrast buttons or links that blend into surrounding text | Medium |
 | **Continuity** | Do related items follow a visual flow? | Navigation items arranged in a way that breaks reading order | Low |
 
+#### Ubiquitous language consistency (Evans)
+
+When an application operates in a specialized domain (sports analytics, finance, healthcare, logistics), the same concept must use the same term everywhere — UI labels, code variable names, database column names, documentation, tooltips, and glossary entries. Inconsistent naming creates cognitive friction: the user must maintain a mental translation table between synonyms, which consumes working memory (Sweller Cognitive Load Theory — extraneous load from synonym resolution).
+
+| Check | What to look for | Severity |
+|-------|-----------------|----------|
+| Cross-surface synonym detection | Does the same concept use different names across UI, code, database, and documentation? (e.g., "match" in UI, "game" in database, "fixture" in docs, "event" in code) Build a term concordance table mapping each domain concept to its name in each artifact layer | High |
+| Metric label-to-column alignment | Do metric labels displayed to users match the column names in the underlying data model? Misalignment forces developers to maintain translation mappings and users to guess which data backs which label | Medium |
+| Glossary completeness | If a glossary exists, does every domain-specific term in the UI appear in it? If no glossary exists and the domain has >10 specialized terms, flag the absence as a finding | Medium |
+| Abbreviation consistency | Are abbreviations used consistently? (e.g., "xG" vs "Expected Goals" vs "expected_goals" — pick one canonical form and use it everywhere, with the full form in tooltips) | Medium |
+| Documentation-UI vocabulary drift | Do README, architecture docs, and API docs use the same terms as the UI? Drift between documentation and interface confuses users who read docs before using the product | Medium |
+
+**Term concordance table** (complete for every domain concept that appears in the UI):
+
+| Domain Concept | UI Label | Code Variable | Database Column | Documentation | Glossary Entry | Consistent? |
+|---------------|----------|---------------|-----------------|---------------|----------------|-------------|
+| [concept] | [label] | [var name] | [column name] | [doc term] | [yes/no] | [yes/no] |
+
+Flag any row where the terms are not consistent as a finding. Severity: High if the inconsistency spans UI-to-database (user sees one name, data uses another); Medium if it spans code-to-documentation only.
+
 #### Grep patterns for consistency violations
 
 | Pattern | What it catches |
@@ -325,6 +346,8 @@ Apply Gestalt principles (Wertheimer 1923) as explicit consistency diagnostics. 
 | Inconsistent `st.header` / `st.subheader` / `st.title` hierarchy across pages | Heading level inconsistency |
 | Mix of `st.dataframe` and `st.table` for similar data displays | Display component inconsistency |
 | Different date/number formatting across pages | Data formatting inconsistency |
+| Same concept with different variable name prefixes across page state modules (e.g., `sm_xg` vs `pc_expected_goals`) | Ubiquitous language violation — synonym in code |
+| Glossary or `help_text` that uses a different term than the metric label it describes | Glossary-UI vocabulary drift |
 
 **Output:** Consistency findings table with pattern, locations, severity, and recommended standard.
 

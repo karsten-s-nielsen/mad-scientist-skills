@@ -1,9 +1,10 @@
-workspace "mad-scientist-skills" "Claude Code plugin providing C4 architecture diagrams, cognitive interface auditing, security auditing, observability auditing, optimization auditing, and pre-commit quality gates" {
+workspace "mad-scientist-skills" "Claude Code plugin providing architecture auditing, C4 architecture diagrams, cognitive interface auditing, security auditing, observability auditing, optimization auditing, documentation auditing, and pre-commit quality gates" {
 
     model {
         developer = person "Developer" "Uses Claude Code for software engineering tasks"
 
-        plugin = softwareSystem "mad-scientist-skills" "Claude Code plugin with skills for architecture visualization, cognitive interface auditing, security auditing, observability auditing, optimization auditing, documentation auditing, and pre-commit quality review" {
+        plugin = softwareSystem "mad-scientist-skills" "Claude Code plugin with skills for architecture auditing, architecture visualization, cognitive interface auditing, security auditing, observability auditing, optimization auditing, documentation auditing, and pre-commit quality review" {
+            architectureAuditSkill = container "architecture-audit Skill" "Architecture audit covering Hexagonal/Ports & Adapters, DDD bounded contexts, Clean Architecture, SOLID, coupling/cohesion, CQRS, Event Sourcing, Twelve-Factor, API-First, and ADRs (beta)" "SKILL.md"
             c4Skill = container "c4 Skill" "Generates interactive C4 architecture diagrams from Structurizr DSL" "SKILL.md, c4_assemble.py, 5 templates"
             cognitiveAuditSkill = container "cognitive-interface-audit Skill" "Cognitive interface audit covering GOMS, Norman's Gulfs, Wood error tolerance, Gergle visual grounding, NASA-TLX, Dual-Process Theory, Cleveland & McGill, Trust Calibration, Information Foraging, Gestalt, EID, and accessibility" "SKILL.md, 5 templates"
             documentationAuditSkill = container "documentation-audit Skill" "Single-tier documentation audit covering Diataxis structural taxonomy, Strunk & White linguistic precision, Google/Microsoft style guides, CLT pedagogical scaffolding, Carroll's Minimalism, Lemov instructional techniques, information foraging, and audience calibration" "SKILL.md, 6 templates"
@@ -19,6 +20,7 @@ workspace "mad-scientist-skills" "Claude Code plugin providing C4 architecture d
 
         developer -> claudeCode "Invokes skills via" "/mad-scientist-skills:<skill>"
         claudeCode -> plugin "Loads and executes" "Plugin system"
+        claudeCode -> architectureAuditSkill "Invokes" "/mad-scientist-skills:architecture-audit"
         claudeCode -> c4Skill "Invokes" "/mad-scientist-skills:c4"
         claudeCode -> cognitiveAuditSkill "Invokes" "/mad-scientist-skills:cognitive-interface-audit"
         claudeCode -> documentationAuditSkill "Invokes" "/mad-scientist-skills:documentation-audit"

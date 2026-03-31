@@ -593,7 +593,27 @@ Also check:
 - CI/CD logs that might print secrets
 - Git history for previously committed secrets (`git log -p --all -S 'password'`)
 
-**Output:** Secrets findings with file locations and remediation (rotate + remove from history if committed).
+#### Secrets strategy assessment (Both modes)
+
+Beyond detecting exposed secrets, evaluate whether the overall secrets management strategy is appropriate for the project's infrastructure footprint. Over-engineering (adding a vault to a single-platform project) wastes effort; under-engineering (scattered env vars with no rotation) creates risk.
+
+| Check | What to look for | Severity |
+|-------|-----------------|----------|
+| Platform-native store utilization | Are platform-native secret stores fully utilized before introducing external vaults? (e.g., Databricks secrets scopes, HF Spaces secrets, GitHub Actions OIDC, AWS Parameter Store, GCP Secret Manager). Adding AWS Secrets Manager to a project that runs entirely on Databricks + HF Spaces adds an AWS account dependency for no operational benefit — a circular dependency where you need credentials to retrieve credentials | Medium |
+| Centralization vs sprawl | Count the distinct secret stores in use. 1-2 stores aligned to deployment targets is healthy. 5+ stores with overlapping scope is sprawl that increases the attack surface for misconfiguration. Document each store's scope and whether it is the authoritative source for its secrets | High |
+| Long-lived credential inventory | List all credentials with lifetimes >90 days (PATs, API keys, service account keys). Each must have a documented expiry date and rotation procedure. Missing rotation documentation is a High finding; missing expiry date is Critical | High |
+| Rotation capability | For each long-lived credential: can it be rotated without downtime? Is there a documented rotation runbook? Is rotation automated (Lambda, cron, CI pipeline) or manual? Manual rotation without a runbook is High; no rotation capability at all is Critical for production credentials | High |
+| Environment separation | Are dev, staging, and production secrets stored in separate scopes/paths/namespaces? Shared credentials across environments mean a dev compromise escalates to production | High |
+| Vault appropriateness heuristic | A centralized vault (AWS Secrets Manager, HashiCorp Vault, Azure Key Vault) adds value when: (a) the project spans 3+ deployment platforms that lack native secret stores, (b) automatic rotation is required for compliance, (c) cross-team secret sharing needs audit trails, or (d) dynamic short-lived credentials are needed. If none of these apply, platform-native stores are sufficient — flag vault adoption as over-engineering, not a gap | Medium |
+| Fallback credential hygiene | When code has a primary credential path (e.g., OAuth M2M) with an env-var fallback (e.g., PAT), verify the fallback is not the de facto production path. Grep for fallback patterns: `os.environ.get("...", "")`, `or os.getenv(...)`, `except: ... fallback`. Each active fallback path should be documented and have its own rotation policy | Medium |
+
+**Planning mode:**
+- Which credential types will the system use? (OAuth M2M, PATs, API keys, JWTs, mTLS certs)
+- For each credential type: what is the planned lifetime, rotation mechanism, and injection method?
+- Is there a single authoritative secret store per deployment target, or will secrets be duplicated across stores?
+- How will secret rotation be tested before production rollout?
+
+**Output:** Secrets findings with file locations and remediation (rotate + remove from history if committed). Secrets strategy assessment with store inventory, rotation gaps, and appropriateness evaluation.
 
 ---
 

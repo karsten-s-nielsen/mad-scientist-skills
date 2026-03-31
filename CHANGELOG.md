@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-03-31
+
+### Added
+- **architecture-audit**: New audit skill (beta) with 10-phase methodology covering architectural pattern detection (incl. framework coupling depth), dependency direction analysis, bounded context assessment (incl. cross-deployment contract validation), domain model quality (incl. data access centralization, presentation framework coupling), SOLID compliance, coupling/cohesion analysis (incl. cross-deployment duplication detection), CQRS/Event Sourcing correctness, Twelve-Factor App compliance (incl. deployment constraint inventory), API-First assessment, and architectural decision records
+- **security-audit**: Secrets strategy assessment in Phase 9 — vault appropriateness heuristic, platform-native store utilization, long-lived credential inventory, rotation capability, environment separation, fallback credential hygiene
+- **optimization-audit**: Anti-corruption layer and cross-context data coupling checks in Phase 9 (Data Pipeline Efficiency) with matching grep patterns
+- **cognitive-interface-audit**: Ubiquitous language consistency checks in Phase 3 (Consistency & Convention) — cross-surface synonym detection, metric label-to-column alignment, glossary completeness, abbreviation consistency, term concordance table
+
 ## [1.12.1] - 2026-03-29
 
 ### Added

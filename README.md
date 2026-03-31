@@ -3,15 +3,16 @@
 ![Mad Scientist Skills](assets/mad-scientist.jpg)
 
 [![CI](https://github.com/karstenskyt/mad-scientist-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/karstenskyt/mad-scientist-skills/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.12.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.13.0-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills are slash-command capabilities that extend Claude Code with specialized knowledge. Install this plugin to get 7 skills for architecture diagramming, code security analysis, performance optimization, observability assessment, documentation evaluation, cognitive interface review, and pre-commit quality checks.
+[Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills are slash-command capabilities that extend Claude Code with specialized knowledge. Install this plugin to get 8 skills for architecture auditing, architecture diagramming, code security analysis, performance optimization, observability assessment, documentation evaluation, cognitive interface review, and pre-commit quality checks.
 
 ## Skills
 
 | Skill | Description | Invoke |
 |-------|-------------|--------|
+| **architecture-audit** | Assess architectural patterns, dependency direction, bounded contexts, SOLID compliance, and structural health (beta) | `/mad-scientist-skills:architecture-audit` |
 | **c4** | Generate interactive C4 architecture diagrams as self-contained HTML | `/mad-scientist-skills:c4` |
 | **cognitive-interface-audit** | Find usability problems, mental model gaps, cognitive overload, and accessibility violations | `/mad-scientist-skills:cognitive-interface-audit` |
 | **documentation-audit** | Evaluate documentation quality, structure, clarity, completeness, and audience fit | `/mad-scientist-skills:documentation-audit` |
@@ -78,6 +79,37 @@ Each audit skill scans your codebase phase-by-phase and produces a severity-rate
 Critical and High issues are fixed during the audit when possible. The full report includes a maturity rating and deployment readiness assessment.
 
 ## Skill Details
+
+<details>
+<summary><strong>architecture-audit</strong> — Architecture Audit (beta: patterns, dependencies, bounded contexts, SOLID, coupling)</summary>
+
+Two-mode, single-tier architecture analysis: **planning** (before code) and **audit** (existing code). Grounded in Hexagonal Architecture (Cockburn), Domain-Driven Design (Evans/Vernon), Clean Architecture (Martin), SOLID principles, Enterprise Integration Patterns (Hohpe & Woolf), CQRS/Event Sourcing (Young/Fowler), Twelve-Factor App (Wiggins), API-First Design, and Architectural Decision Records (Nygard).
+
+### Coverage
+
+| Phase | Area | Planning | Audit |
+|-------|------|:--------:|:-----:|
+| 0 | Anti-pattern scanning (circular imports, god modules, framework leaks, mixed abstractions) | | x |
+| 1 | Architectural surface discovery | x | x |
+| 2 | Architectural pattern detection (hexagonal, clean, layered, medallion, CQRS, event sourcing, API-first) | | x |
+| 3 | Dependency direction analysis | x | x |
+| 4 | Bounded context assessment (DDD strategic patterns) | x | x |
+| 5 | Domain model quality (archetype-adapted) | | x |
+| 6 | SOLID compliance | | x |
+| 7 | Coupling and cohesion analysis | | x |
+| 8 | CQRS, event sourcing, twelve-factor, API-first (conditional) | x | x |
+| 9 | Architectural decision records | x | x |
+| 10 | Findings report | x | x |
+
+### Usage
+
+Ask naturally ("Architecture audit this project", "Review the architecture", "SOLID audit") or invoke directly:
+
+```
+/mad-scientist-skills:architecture-audit
+```
+
+</details>
 
 <details>
 <summary><strong>c4</strong> — C4 Architecture Diagrams (rendering pipeline, diagram types, templates)</summary>
