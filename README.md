@@ -3,7 +3,7 @@
 ![Mad Scientist Skills](assets/mad-scientist.jpg)
 
 [![CI](https://github.com/karstenskyt/mad-scientist-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/karstenskyt/mad-scientist-skills/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.13.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.14.0-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills are slash-command capabilities that extend Claude Code with specialized knowledge. Install this plugin to get 8 skills for architecture auditing, architecture diagramming, code security analysis, performance optimization, observability assessment, documentation evaluation, cognitive interface review, and pre-commit quality checks.
@@ -328,7 +328,7 @@ Two-mode, single-tier optimization analysis: **planning** (before code) and **au
 
 | Phase | Area | Planning | Audit |
 |-------|------|:--------:|:-----:|
-| 0 | Anti-pattern scanning (algorithm, memory, concurrency, database, HTTP N+1, ingestion no-op waste, loop-invariant computation, logging) | | x |
+| 0 | Anti-pattern scanning (algorithm, memory, concurrency, database, HTTP N+1, PyTorch/ML training, ingestion no-op waste, loop-invariant computation, logging) | | x |
 | 0.5 | Documentation & tech debt scan (TODO/ROADMAP/PLAN keyword search) | | x |
 | 1 | Performance surface discovery | x | x |
 | 2 | Algorithm & data structure efficiency | | x |

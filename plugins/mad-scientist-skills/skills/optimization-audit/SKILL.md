@@ -102,6 +102,37 @@ Scan all source files for these patterns. Each match requires manual review — 
 | Rust | `Box::leak\|mem::forget` | Intentional leak — verify intentional | Medium |
 | Any | `.*cache.*=.*\{\}` or `.*cache.*= new Map` without TTL/max entries | Unbounded cache | Critical |
 
+#### PyTorch / ML training anti-patterns
+
+GPU training pipelines have a distinct performance surface: the GPU is fast but starves if the CPU cannot feed it data quickly enough. The dominant bottleneck is almost always the `DataLoader` → `__getitem__` → GPU transfer pipeline, not the model itself. Audit the data loading path first.
+
+**DataLoader configuration:**
+
+| Language | Pattern | Issue | Severity |
+|----------|---------|-------|----------|
+| Python | `DataLoader\(.*num_workers\s*=\s*0` or `DataLoader\(` without `num_workers` keyword | Data loading runs on main thread; GPU idles during `__getitem__`. Use `num_workers=2-8` for CPU-bound preprocessing | Critical |
+| Python | `pin_memory\s*=\s*True` with `num_workers\s*=\s*0` on the same DataLoader | `pin_memory` enables async DMA transfer, but only benefits when workers prepare batches concurrently. With `num_workers=0`, page-locking overhead with no speedup | High |
+| Python | `DataLoader\(` with `num_workers\s*>\s*0` but without `persistent_workers\s*=\s*True` | Worker processes are spawned and destroyed each epoch. Module reimports and dataset reinit per epoch. Set `persistent_workers=True` to reuse workers | High |
+
+**Dataset `__getitem__` hot path:**
+
+| Language | Pattern | Issue | Severity |
+|----------|---------|-------|----------|
+| Python | `torch\.full\(\|torch\.zeros\(\|torch\.ones\(` inside `__getitem__` | Per-sample tensor allocation on every access. Pre-allocate padded tensors for the full dataset in `__init__` and return indexed slices in `__getitem__` | Critical |
+| Python | `torch\.tensor\(` converting Python lists inside `__getitem__` | Temporary tensor created from Python list per sample. Pre-convert all data to tensors at init time | High |
+| Python | `\.item\(\)` inside a loop within `__getitem__` | Python/C++ boundary crossing per element. Vectorize with tensor operations instead of scalar `.item()` extraction | High |
+| Python | `for .* in range\(.*len\)` inside `__getitem__` where the loop body does element-wise tensor assignment | Python loop over sequence positions for work that can be done with a single tensor slice or `torch.where` | High |
+
+**Model forward pass:**
+
+| Language | Pattern | Issue | Severity |
+|----------|---------|-------|----------|
+| Python | `torch\.(triu\|tril\|ones\|zeros\|arange\|eye)\(` inside `forward\(\)\|_encode\(\)\|_embed\(\)` where the result depends only on model config (not batch data) | Tensor allocated on GPU every forward pass but is identical across all calls. Use `self.register_buffer()` in `__init__` | High |
+| Python | `\.to\(device\)` called multiple times on the same tensor in the same training step (e.g., `batch["x"].to(device)` in forward call AND again in loss computation) | Redundant device check per call. Move entire batch dict to device once at top of step: `b = {k: v.to(device) for k, v in batch.items()}` | Medium |
+| Python | `\.to\(device\)` or `\.unsqueeze\(0\)\.to\(device\)` inside a `for` loop over candidates/players/items in evaluation code | Per-iteration GPU transfer in evaluation loop. Move sample to device once before the loop; only mutate the varying field per iteration | High |
+
+**Audit instruction:** For any PyTorch training codebase, inspect the `DataLoader` construction, the `Dataset.__getitem__` method, and the model's `forward` / `_encode` / `_embed` methods in that order. The data loading path is typically the bottleneck — profile it before optimizing the model.
+
 #### Concurrency anti-patterns
 
 | Language | Pattern | Issue | Severity |

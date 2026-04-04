@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-04-04
+
+### Added
+- **optimization-audit**: PyTorch / ML training anti-patterns in Phase 0 — DataLoader configuration (`num_workers=0`, `pin_memory` without workers, missing `persistent_workers`), Dataset `__getitem__` hot path (per-sample tensor allocation, `torch.tensor()` from Python lists, `.item()` in loops, Python for-loops over sequence positions), model forward pass (`register_buffer` candidates for config-dependent tensors, redundant `.to(device)` calls, per-iteration GPU transfer in eval loops). Includes audit instruction prioritizing data loading path over model optimization.
+
 ## [1.13.0] - 2026-03-31
 
 ### Added
