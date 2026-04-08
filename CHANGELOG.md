@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-04-07
+
+### Added
+- **cognitive-interface-audit**: Data visualization integrity checks in Phase 6 (Visual Grounding) — bar/area chart zero-baseline enforcement, shape sizing method (area vs diameter), chart-question alignment, data colour consistency, categorical palette limits, quantitative encoding method, label overload detection, annotation sufficiency, pie chart integrity, diverging scale symmetry, editorial focus hierarchy. Grounded in Kirk's *Data Visualisation* (3rd ed., 2025), Cleveland & McGill (1984), and Mackinlay (1986)
+- **cognitive-interface-audit**: Red-green data opposition and redundant data encoding checks in Phase 7 (Accessibility) for colour-deficient viewers (~5% of population). Grounded in Kirk Ch9, WCAG 1.4.1
+- **cognitive-interface-audit**: Data colour association consistency check in Phase 3 (Consistency) — same colour must represent same data category across all pages
+- **documentation-audit**: Limitation front-loading and error message empathy checks in Phase 3 (Linguistic Precision). Grounded in Voss's *Never Split the Difference* (Accusation Audit, Labeling, Tactical Empathy)
+- **documentation-audit**: Simplify-vs-clarify decision rule in Phase 4 (Pedagogical Scaffolding) — Kirk's complicated/complex/simple taxonomy for calibrating documentation depth to audience capacity
+- **documentation-audit**: Reader ownership check in Phase 4 — Voss's "That's Right" vs "You're Right" principle applied to tutorial scaffolding weight
+- **documentation-audit**: Voice/tone guidance in Phase 5 (Structural Consistency) — Voss's three voice tones (positive/playful default, authoritative for warnings, assertive almost never) as tone consistency framework
+
 ## [1.14.0] - 2026-04-04
 
 ### Added
@@ -149,7 +160,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Trailing newline in `architecture.html`
 
-[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.12.0...HEAD
+[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.15.0...HEAD
+[1.15.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.14.0...v1.15.0
+[1.14.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.13.0...v1.14.0
+[1.13.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.9.1...v1.10.0

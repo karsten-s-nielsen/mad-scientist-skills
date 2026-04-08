@@ -3,7 +3,7 @@
 ![Mad Scientist Skills](assets/mad-scientist.jpg)
 
 [![CI](https://github.com/karstenskyt/mad-scientist-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/karstenskyt/mad-scientist-skills/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.14.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.15.0-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills are slash-command capabilities that extend Claude Code with specialized knowledge. Install this plugin to get 8 skills for architecture auditing, architecture diagramming, code security analysis, performance optimization, observability assessment, documentation evaluation, cognitive interface review, and pre-commit quality checks.
@@ -171,7 +171,7 @@ Ask naturally ("Create a C4 diagram for this project") or invoke directly:
 <details>
 <summary><strong>cognitive-interface-audit</strong> — Cognitive Interface Audit (coverage, frameworks, templates)</summary>
 
-Two-mode, single-tier cognitive interface analysis: **planning** (before UI) and **audit** (existing UI). Grounded in seven academic research threads: task modeling and error tolerance (GOMS, Wood & Byrne, Rasmussen), visual grounding (Gergle, Kraut & Fussell), cognitive load (Sweller, Kahneman), gulf analysis (Norman), information foraging (Pirolli & Card), trust calibration (Lee & See), and ecological interface design (Vicente & Rasmussen). Also applies Cleveland & McGill visual encoding, Gestalt perceptual principles, and WCAG 2.1 AA accessibility standards.
+Two-mode, single-tier cognitive interface analysis: **planning** (before UI) and **audit** (existing UI). Grounded in seven academic research threads: task modeling and error tolerance (GOMS, Wood & Byrne, Rasmussen), visual grounding (Gergle, Kraut & Fussell), cognitive load (Sweller, Kahneman), gulf analysis (Norman), information foraging (Pirolli & Card), trust calibration (Lee & See), and ecological interface design (Vicente & Rasmussen). Also applies Kirk data visualization integrity, Cleveland & McGill visual encoding, Gestalt perceptual principles, and WCAG 2.1 AA accessibility standards.
 
 ### Coverage
 
@@ -183,8 +183,8 @@ Two-mode, single-tier cognitive interface analysis: **planning** (before UI) and
 | 3 | Consistency & convention | | x |
 | 4 | Error tolerance (Wood 7-layer defense, Rasmussen SRK) | x | x |
 | 5 | Cognitive load assessment (NASA-TLX, Sweller CLT) | x | x |
-| 6 | Visual grounding, feedback & interpretation (Gergle grounding theory, Vicente & Rasmussen EID) | | x |
-| 7 | Accessibility & inclusion (WCAG 2.1 AA, demographic bias) | | x |
+| 6 | Visual grounding, feedback & interpretation (Gergle grounding theory, Kirk data visualization integrity, Vicente & Rasmussen EID) | | x |
+| 7 | Accessibility & inclusion (WCAG 2.1 AA, Kirk colour accessibility, demographic bias) | | x |
 | 8 | Information architecture | | x |
 | 9 | Findings report | x | x |
 
@@ -211,7 +211,7 @@ Ask naturally ("Audit the UI for this project", "Check usability", "Mental model
 <details>
 <summary><strong>documentation-audit</strong> — Single-Tier Documentation Audit (coverage, frameworks, templates)</summary>
 
-Two-mode, single-tier documentation analysis: **planning** (before docs exist) and **audit** (existing docs). Grounded in seven research threads: classical composition (Strunk & White), enterprise style standards (Google/Microsoft), structural taxonomy (Diataxis, Good Docs Project), Cognitive Load Theory (Sweller, Chandler & Sweller), minimalist instruction (Carroll), instructional techniques (Lemov), and information foraging (Pirolli & Card).
+Two-mode, single-tier documentation analysis: **planning** (before docs exist) and **audit** (existing docs). Grounded in nine research threads: classical composition (Strunk & White), enterprise style standards (Google/Microsoft), structural taxonomy (Diataxis, Good Docs Project), Cognitive Load Theory (Sweller, Chandler & Sweller), minimalist instruction (Carroll), instructional techniques (Lemov), information foraging (Pirolli & Card), tactical empathy (Voss), and data visualization pedagogy (Kirk simplify-vs-clarify).
 
 ### Coverage
 
@@ -220,9 +220,9 @@ Two-mode, single-tier documentation analysis: **planning** (before docs exist) a
 | 0 | Anti-pattern scanning (passive voice, needless words, inclusive language, structural pollution) | | x |
 | 1 | Documentation surface discovery | x | x |
 | 2 | Diataxis classification (quadrant identity, pollution detection, missing types) | x | x |
-| 3 | Linguistic precision (Strunk & White, Google/Microsoft style rules) | | x |
-| 4 | Pedagogical scaffolding (CLT, Carroll, Merrill, Lemov techniques) | x | x |
-| 5 | Structural consistency (vocabulary, formatting, template adherence) | | x |
+| 3 | Linguistic precision (Strunk & White, Google/Microsoft style rules, Voss empathy) | | x |
+| 4 | Pedagogical scaffolding (CLT, Carroll, Merrill, Lemov techniques, Kirk simplify-vs-clarify) | x | x |
+| 5 | Structural consistency (vocabulary, formatting, Voss voice tones, template adherence) | | x |
 | 6 | Repository architecture (README, CONTRIBUTING, SECURITY, CHANGELOG, API docs) | | x |
 | 7 | Audience calibration (expert blind spot, information scent, assumed context) | | x |
 | 8 | Completeness & freshness (broken links, outdated content, missing gaps) | | x |

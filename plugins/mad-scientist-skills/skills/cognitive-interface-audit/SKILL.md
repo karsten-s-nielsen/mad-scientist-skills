@@ -1,6 +1,6 @@
 ---
 name: cognitive-interface-audit
-description: Comprehensive cognitive interface audit with two modes and a single tier. Planning mode designs task models, user expertise mapping, and error tolerance strategy. Audit mode evaluates mental model alignment (Norman's Gulfs), consistency (Gestalt), error tolerance (Wood 7-layer defense), cognitive load (NASA-TLX, Dual-Process), visual grounding (Gergle), trust calibration (Lee & See), data visualization effectiveness (Cleveland & McGill), ecological constraint visibility (Vicente & Rasmussen EID), and accessibility. Single tier — cognitive evaluation tools are methodology-based, not software-licensed. Grounded in GOMS (Card, Moran & Newell), error-tolerant design (Wood & Byrne), visual grounding theory (Gergle, Kraut & Fussell), information foraging (Pirolli & Card), and ecological interface design (Vicente & Rasmussen). Use when asked to "UI audit", "UX review", "cognitive audit", "mental model check", "usability review", or "interface audit".
+description: Comprehensive cognitive interface audit with two modes and a single tier. Planning mode designs task models, user expertise mapping, and error tolerance strategy. Audit mode evaluates mental model alignment (Norman's Gulfs), consistency (Gestalt), error tolerance (Wood 7-layer defense), cognitive load (NASA-TLX, Dual-Process), visual grounding (Gergle), trust calibration (Lee & See), data visualization integrity (Kirk, Cleveland & McGill), ecological constraint visibility (Vicente & Rasmussen EID), and accessibility. Single tier — cognitive evaluation tools are methodology-based, not software-licensed. Grounded in GOMS (Card, Moran & Newell), error-tolerant design (Wood & Byrne), visual grounding theory (Gergle, Kraut & Fussell), data visualization design (Kirk), information foraging (Pirolli & Card), and ecological interface design (Vicente & Rasmussen). Use when asked to "UI audit", "UX review", "cognitive audit", "mental model check", "usability review", or "interface audit".
 ---
 
 # Cognitive Interface Audit
@@ -294,6 +294,7 @@ Evaluate whether the interface uses the same patterns for the same operations, a
 | Icon consistency | Same icon means the same thing everywhere. No icon used for two different actions | High |
 | Layout patterns | Similar pages have similar layouts. Data tables, forms, and detail views follow the same template | Medium |
 | Color semantics | Colors convey the same meaning everywhere (red = error/danger, green = success, etc.) | High |
+| Data colour association consistency | When colour encodes data categories (not UI states), the same colour must represent the same category across all pages. Reusing the same colour for a different data category on a different page is worse than no colour at all — viewers carry learned associations between pages (Kirk Ch9: "Once a colour stands for something, preserve that association") | High |
 | Interaction patterns | Same gesture/click pattern produces same type of result (e.g., clicking a row always opens detail) | High |
 | Platform conventions | Interface follows platform norms (web: links are blue/underlined, buttons look clickable; mobile: swipe, pull-to-refresh) (Nielsen Heuristic 4 Consistency and Standards) | Medium |
 | Domain conventions | Interface follows domain-specific conventions (e.g., in soccer analytics: pitch orientation, color coding by team, standard stat abbreviations) (Nielsen Heuristic 4; GOMS compiled methods from domain experience) | High |
@@ -579,6 +580,26 @@ For complex multi-step workflows, apply Gergle's Joint Action Storyboard framewo
 
 **Output:** Visual grounding findings with feedback latency analysis, grounding cost hotspots, and recommended visual anchors.
 
+#### Data visualization integrity (Kirk; Cleveland & McGill)
+
+When the interface displays data through charts, graphs, or visual encodings, evaluate whether the visual representation is truthful and effective. Kirk's three principles (Trustworthy > Accessible > Elegant) parallel this skill's existing priority ordering. These checks apply to any chart, graph, or data-driven visual element in the interface.
+
+| Check | What to look for | Source | Severity |
+|-------|-----------------|--------|----------|
+| Bar/area chart zero-baseline | Quantitative axis on bar charts and area charts must start at zero. Truncation distorts perceived proportional size — a bar twice as tall must represent twice the value | Kirk Principle 1 (Trustworthy); Cleveland & McGill 1984 | High |
+| Shape sizing method | Bubble, circle, and proportional-shape charts must size marks by **area**, not diameter or radius. Diameter sizing inflates perceived differences by the square (a value 2× larger appears 4× larger) | Kirk Ch6; Stevens' Power Law | High |
+| Chart-question alignment | Can the designer articulate "what question does this chart answer?" as a title or statement? Charts without an editorial purpose are visual noise | Kirk Ch5 (Editorial Thinking — Angle) | Medium |
+| Data colour consistency | Same colour must represent the same data category across all charts on all pages. Reusing a colour for a different data association without re-explanation forces mental translation (extraneous load) | Kirk Ch9; Sweller CLT | High |
+| Categorical palette limit | Nominal colour palettes exceeding ~12 distinct hues destroy legibility — viewers cannot reliably distinguish associations beyond this threshold | Kirk Ch9; Ware 2013 | Medium |
+| Quantitative encoding method | Quantitative gradients should use lightness variation (light-to-dark of a single hue), not hue variation. Hue is a categorical attribute — using it for magnitude creates false perceptual ordering | Kirk Ch6 (Mackinlay ranking); Cleveland & McGill 1984 | Medium |
+| Label overload | Charts carrying both axis scales AND direct value labels create redundant encoding that competes for attention. Use one method, or justify dual encoding for accessibility (redundant encoding for vision-impaired users) | Kirk Ch8 (Annotation) | Low |
+| Annotation sufficiency | Charts missing axis titles, legends, or data source attribution impede the perceiving phase — viewers cannot decode what they see. Check: titles present? axes labelled? colour legend included? data source cited? | Kirk Ch8; this phase's existing "Result interpretability" check | High |
+| Pie chart integrity | Pie chart sectors must sum to exactly 100% with mutually exclusive categories. Violation is a mathematical trust failure, not a stylistic preference | Kirk Ch6 | High |
+| Diverging scale symmetry | Diverging colour scales must have symmetric lightness increments on both sides of the breakpoint. Asymmetric scales create false perceived bias toward one end | Kirk Ch9 | Medium |
+| Editorial focus hierarchy | "If everything shouts, nothing is heard" (Kirk). Are editorially important data points visually distinguished from context via colour, size, or annotation? Equal visual weight across all elements = no hierarchy | Kirk Ch5 (Focus); Gestalt Figure-Ground | Medium |
+
+**Output:** Data visualization integrity findings with Kirk principle references, file paths, and remediation guidance.
+
 ---
 
 ### Phase 7: Accessibility & Inclusion (Audit mode)
@@ -594,6 +615,8 @@ Load `templates/accessibility-inclusion.md` for the full WCAG 2.1 AA checklist, 
 | Screen reader compatibility | All content has semantic HTML structure; images have alt text; form inputs have labels; ARIA roles where needed | High |
 | Color contrast | Text meets WCAG AA contrast ratios (4.5:1 normal text, 3:1 large text) | High |
 | Color-only indicators | No information conveyed by color alone — always paired with text, icon, or pattern | High |
+| Red-green data opposition | Red-green pairings as the sole distinguisher for meaning-bearing data categories (beyond UI states) are a deuteranopia accessibility failure — ~5% of population affected. Substitute with blue-orange, purple-green, or Kirk's tested alternatives (deep pink / lime green) | Kirk Ch9; WCAG 1.4.1 | High |
+| Redundant data encoding | When colour carries data meaning in charts, a secondary attribute (texture, symbol, positional grouping) should encode the same distinction for colour-deficient viewers | Kirk Ch9; WCAG 1.4.1 | Medium |
 | Responsive layout | Interface functions on screen widths from 320px to 4K (WCAG 1.4.10) | Medium |
 | Touch targets | Interactive elements are at least 44x44px on touch devices (WCAG 2.5.5 Level AAA; Apple HIG — widely adopted as AA best practice) | Medium |
 | Text scaling | Interface remains usable at 200% browser zoom (WCAG 1.4.4) | Medium |

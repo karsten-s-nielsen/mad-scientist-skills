@@ -297,6 +297,8 @@ Load `templates/linguistic-rules.md` for the full Strunk & White, Google, and Mi
 | Filler nouns: "case", "character", "nature", "factor", "feature" as abstract nouns | Strunk & White Ch. V | Low |
 | Dangling modifiers: participial phrase at sentence start not referring to grammatical subject | Strunk & White Rule 7 | Medium |
 | Comma splices: two independent clauses joined by only a comma | Strunk & White Rule 5 | Low |
+| Limitation front-loading: migration guides, breaking-change docs, and known-issues sections that prescribe solutions without first acknowledging the pain point. Acknowledging negatives before prescribing action defuses reader defensiveness and builds trust — "We know this is a breaking change" before "Here's how to migrate" | Voss (Accusation Audit; Labeling) | Low |
+| Error message empathy: error messages that state raw facts ("Error: TIMEOUT") without labeling the user's situation ("It looks like the connection was interrupted"). Labeling the emotional context before directing action reduces amygdala-driven frustration | Voss (Labeling; Tactical Empathy) | Low |
 
 #### Grep patterns for linguistic violations
 
@@ -340,6 +342,7 @@ Load `templates/pedagogical-scaffolding.md` for the full Carroll, CLT, Merrill, 
 | **Begin with the End:** Does each tutorial/guide state a measurable objective? Can the reader know whether they achieved it? | Lemov (4 Ms); Merrill (task-centered) | High |
 | **Knowledge Organizers:** Are prerequisites front-loaded at the beginning, not buried? Is there a retrievable reference block (glossary, prerequisites, "what you need to know")? | Lemov #5; CLT | High |
 | **Guidance Fading:** Do tutorials scaffold explicitly for novices (step-by-step with verification)? Do advanced docs assume appropriate expertise without over-scaffolding? | Sweller (guidance fading); Lemov #21 | High |
+| **Simplify vs. Clarify:** Is a genuinely complex topic being falsely simplified (losing necessary nuance), or is a simple topic being over-explained (patronizing the audience)? Kirk's taxonomy: *Complicated* subjects (inherently technical, acquirable with effort) need clarification with assistance. *Complex* subjects (interrelated, no clean conclusion) need structured decomposition. *Simple* subjects need neither. "Strive for clarity, not simplicity" — do not patronize capable audiences by oversimplifying | Kirk Ch2 (Accessible principle); Sweller (intrinsic load) | Medium |
 | **Worked examples:** Are examples process-oriented (showing reasoning and decision process) or product-oriented (showing only the final result)? For complex/ill-structured domains, process-oriented is required | CLT (worked example effect) | Medium |
 | **Verification commands:** After complex configuration steps, can the reader confirm success? (e.g., `curl`, `ping`, health check, expected output) | Lemov #7 (Check for Understanding); Carroll (error recognition) | High |
 | **Cognitive chunking:** Are dense sections broken into manageable pieces? >3 new concepts introduced before any practice? | CLT (intrinsic load management); Sweller | Medium |
@@ -350,6 +353,7 @@ Load `templates/pedagogical-scaffolding.md` for the full Carroll, CLT, Merrill, 
 | **Error recovery:** Does the doc anticipate common errors and guide recovery? Are failure modes documented alongside success paths? | Carroll's Minimalism; Lemov #2 (Plan for Error) | High |
 | **Application prompts:** Does the doc include prompts for the reader to produce output (code, configuration), not just read? | Merrill (Application principle); Lemov #38 (Everybody Writes) | Medium |
 | **Integration:** Does the doc help readers connect new knowledge to their existing practice or to other parts of the system? | Merrill (Integration principle) | Low |
+| **Reader Ownership:** Do tutorials guide readers to discover answers themselves (producing "that's right" moments of genuine understanding), or do they lecture (producing "you're right" compliance with no retention)? The reader should feel they reached the conclusion, not that you imposed it. If the reader congratulates the documentation rather than themselves, the scaffolding was too heavy | Voss ("That's Right" vs "You're Right"); Carroll (Minimalism) | Low |
 
 #### Walkthrough test (critical tutorials and quick starts)
 
@@ -437,7 +441,7 @@ Cross-document consistency checks:
 | Code block formatting | Consistent language tags, consistent use of highlighting/annotations | Low |
 | Link format consistency | Relative vs absolute, trailing slashes, anchor style | Low |
 | Date/version format | Consistent date formats (ISO 8601 preferred), version references | Low |
-| Tone/register consistency | No mixing informal ("basically it just does X") and formal ("implements the observer pattern") across related docs | Medium |
+| Tone/register consistency | No mixing informal ("basically it just does X") and formal ("implements the observer pattern") across related docs. Voss identifies three voice tones: positive/playful (default — warm, competent), authoritative (security warnings, breaking changes — declarative, calm), and assertive (almost never appropriate — signals dominance). Inconsistent tone across related docs creates the same distrust as inconsistent color semantics in a UI | Medium |
 | Partial pattern application | If a UX/doc pattern (cross-references, admonitions, code annotations) appears in some docs but not all equivalent docs, flag as inconsistency | High |
 | Empty states | "Coming soon" / placeholder / stub pages without content — either write them or remove them | Medium |
 
