@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-04-14
+
+### Added
+
+- **New skill: `measure-before-optimize`** — pre-change measurement gate for perf-sensitive functions. Captures a `pytest-benchmark` baseline, waits for the change, re-measures, reports delta against budget and a configurable regression threshold. Peer to `optimization-audit` — this skill is pre-change, the other is retrospective. See `plugins/mad-scientist-skills/skills/measure-before-optimize/SKILL.md`.
+
+### Changed
+
+- **`final-review` skill** — added Phase 2.5 "Architectural Decision Review" between Phase 2 (Code Quality Review) and Phase 3 (Documentation Review). Scans the change for decisions matching six patterns (cross-cutting dependency changes, schema ownership, platform workarounds, naming conventions, algorithm reimplementations, defense-in-depth controls) and prompts for an ADR when one is missing or stale. Updated Phase 5 verification summary checklist with an "Architectural Decisions" row.
+
 ## [1.15.0] - 2026-04-07
 
 ### Added
@@ -160,7 +170,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Trailing newline in `architecture.html`
 
-[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.15.0...HEAD
+[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.16.0...HEAD
+[1.16.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.12.0...v1.13.0

@@ -45,6 +45,39 @@ The Markdown body should include, in order:
 5. **Phases** — numbered audit phases with clear goals and outputs
 6. **Important rules** — constraints the skill must follow (e.g., no false positives, cite evidence, token limits)
 
+## Skill Categories
+
+mad-scientist-skills contains two categories of skills plus a review gate:
+
+| Category | When it fires | Examples | Output |
+|---|---|---|---|
+| **Retrospective audit** | After code exists — "audit this codebase for X" | `architecture-audit`, `cognitive-interface-audit`, `documentation-audit`, `observability-audit`, `optimization-audit`, `security-audit` | Prioritised findings report |
+| **Pre-change gate** | Before a code change — "about to modify this function" | `measure-before-optimize` (peer to `optimization-audit`) | Before/after delta, regression flag |
+| **Review gate** | After a change, before commit — "final review before shipping" | `final-review` | Structured pre-commit checklist |
+
+When adding a new skill, decide its category first. Retrospective audits and pre-change gates often come in **peer pairs** (e.g., `measure-before-optimize` ↔ `optimization-audit`): the pre-change gate captures a baseline and prevents regressions; the retrospective audit finds issues in code that already exists. A peer pair must have **distinct trigger descriptions** so the Skill tool can select between them without ambiguity — `measure-before-optimize`'s description begins with "Pre-change measurement gate," while `optimization-audit`'s begins with "Comprehensive optimization audit."
+
+## Architectural Decision Records
+
+Significant architectural decisions — ones future contributors will reasonably ask "why?" about — are documented in `docs/adrs/` using the Michael Nygard format captured in `docs/adrs/ADR-TEMPLATE.md`. The `final-review` skill Phase 2.5 scans for decisions that warrant an ADR and prompts for one before commit.
+
+**When to write an ADR:**
+
+- Introducing a new skill category (e.g., adding pre-change gates alongside retrospective audits — see `ADR-001`)
+- Establishing a naming convention that future skills will follow (e.g., the `<action>-before-<phase>` peer-skill pattern)
+- Changing an existing skill's trigger scope in a way that affects plugin identity
+- Adopting a cross-cutting policy (e.g., "all audit skills must have a Planning mode")
+- Retiring or deprecating a skill that users may already depend on
+
+**When NOT to write an ADR:**
+
+- Adding a new phase to an existing skill if it fits the existing thematic pattern
+- Fixing a false positive or broken phase output
+- Documentation-only changes
+- Routine skill refinement (clearer prose, better examples, updated templates)
+
+**Existing ADRs:** `docs/adrs/ADR-*.md`. **Template:** `docs/adrs/ADR-TEMPLATE.md`.
+
 ## Commit Conventions
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/).

@@ -3,10 +3,10 @@
 ![Mad Scientist Skills](assets/mad-scientist.jpg)
 
 [![CI](https://github.com/karstenskyt/mad-scientist-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/karstenskyt/mad-scientist-skills/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.15.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.16.0-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills are slash-command capabilities that extend Claude Code with specialized knowledge. Install this plugin to get 8 skills for architecture auditing, architecture diagramming, code security analysis, performance optimization, observability assessment, documentation evaluation, cognitive interface review, and pre-commit quality checks.
+[Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills are slash-command capabilities that extend Claude Code with specialized knowledge. Install this plugin to get 9 skills for architecture auditing, architecture diagramming, code security analysis, performance optimization, pre-change measurement gating, observability assessment, documentation evaluation, cognitive interface review, and pre-commit quality checks.
 
 ## Skills
 
@@ -17,6 +17,7 @@
 | **cognitive-interface-audit** | Find usability problems, mental model gaps, cognitive overload, and accessibility violations | `/mad-scientist-skills:cognitive-interface-audit` |
 | **documentation-audit** | Evaluate documentation quality, structure, clarity, completeness, and audience fit | `/mad-scientist-skills:documentation-audit` |
 | **final-review** | Pre-commit quality gate with code review, documentation check, and architecture diagram | `/mad-scientist-skills:final-review` |
+| **measure-before-optimize** | Pre-change measurement gate for perf-sensitive functions — captures baseline and verifies regression stays within threshold | `/mad-scientist-skills:measure-before-optimize` |
 | **observability-audit** | Assess monitoring maturity across logging, metrics, tracing, alerting, and SLI/SLO coverage | `/mad-scientist-skills:observability-audit` |
 | **optimization-audit** | Find performance bottlenecks in algorithms, queries, caching, concurrency, and cloud cost | `/mad-scientist-skills:optimization-audit` |
 | **security-audit** | Identify vulnerabilities via threat modeling, code scanning, dependency audit, and infrastructure review | `/mad-scientist-skills:security-audit` |
@@ -268,6 +269,53 @@ Ask naturally ("Final review", "Check everything before commit") or invoke direc
 
 ```
 /mad-scientist-skills:final-review
+```
+
+</details>
+
+<details>
+<summary><strong>measure-before-optimize</strong> — Pre-Change Measurement Gate (workflow phases, parameters, optimization-audit comparison)</summary>
+
+Captures a performance baseline before a change, waits for the change, re-measures, and reports the delta against the budget and a configurable regression threshold. Peer skill to `optimization-audit` — this one is pre-change, the other is retrospective.
+
+### When to use
+
+- Before modifying a function with a `pytest-benchmark` test
+- Before modifying a function listed in a project's performance baselines file (e.g. `docs/performance-baselines.md`)
+- Before modifying a function flagged as a hot path in `CLAUDE.md` or similar documents
+
+### Workflow
+
+1. **Identify** — locates the matching benchmark for the function being modified
+2. **Capture baseline** — runs `pytest-benchmark` with `--benchmark-json` to a scratch file in `tempfile.gettempdir()` (never writes to the project root)
+3. **Yield** — exits so the main agent can make the code change
+4. **Re-measure** — runs the same benchmark after the change
+5. **Compare and report** — delta in median and p95, position vs budget, regression threshold check
+
+### Parameters
+
+| Parameter | Default | Description |
+|---|---|---|
+| `baselines_file` | `docs/performance-baselines.md` | Path to the project's baselines file |
+| `regression_threshold` | `10%` | Percent regression that escalates to user prompt |
+| `budget_enforcement` | `warn` | `warn` (report and ask) or `block` (halt execution) |
+| `benchmark_rounds` | `3` | `pytest-benchmark --benchmark-min-rounds` |
+
+### Comparison to optimization-audit
+
+| Attribute | optimization-audit | measure-before-optimize |
+|---|---|---|
+| Timing | Retrospective (after code exists) | Pre-change gate |
+| Trigger | "Audit this codebase for perf issues" | "About to touch a measured function" |
+| Scope | Whole codebase | Single function / small change |
+| Action | Recommends fixes | Gates the change |
+
+### Usage
+
+Ask naturally ("Measure before I optimize this", "Check the baseline first") or invoke directly:
+
+```
+/mad-scientist-skills:measure-before-optimize
 ```
 
 </details>

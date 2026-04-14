@@ -55,6 +55,25 @@ For each issue found, categorize by severity:
 | **Medium** | Note for future | Minor style inconsistency, potential optimization |
 | **Low** | Track in backlog | Best practice deviation, minor polish |
 
+### Phase 2.5: Architectural Decision Review
+
+Scan the change for architectural decisions that future maintainers will reasonably ask "why?" about. Decisions matching any of these patterns are ADR-worthy:
+
+- Introduces, removes, or replaces a cross-cutting dependency
+- Changes a schema ownership or grants model
+- Hard-codes a workaround for a platform constraint (Databricks Serverless, MSYS path handling, etc.)
+- Introduces a naming, identifier, or path convention with downstream consumers
+- Reimplements an algorithm to avoid a dependency
+- Introduces a defense-in-depth control or security boundary
+
+For each decision matched, ask: "Is this documented in an ADR?"
+
+- **No ADR exists**: prompt the user to draft one using the project's ADR template (commonly `docs/adrs/ADR-TEMPLATE.md` or `docs/superpowers/adrs/ADR-TEMPLATE.md`) before commit. If the user approves, draft the ADR inline during final-review.
+- **Stale ADR exists**: update the existing ADR's Status field and Consequences section to reflect the current change.
+- **Current ADR exists**: confirm and move to Phase 3.
+
+This sub-phase is a prompt, not a block. Operator judgment decides whether a decision rises to ADR-worthiness. The check is a decision inventory, not a gate.
+
 ### Phase 3: Documentation Review
 
 Ensure all documentation reflects the current state of the code:
@@ -120,6 +139,10 @@ Present a structured summary to the user:
 ### Architecture Diagram
 - [x] architecture.html generated/updated
 - Levels included: Context, Container, Component
+
+### Architectural Decisions
+- [x] Decision inventory scanned (Phase 2.5)
+- [x] ADRs up to date / drafted where needed
 
 ### Issues Found
 | # | Severity | File | Issue | Status |
