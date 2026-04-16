@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.0] - 2026-04-16
+
+### Added
+
+- **`cognitive-interface-audit`** — ColorBrewer palette enforcement (two-tier, Option C):
+  - **Phase 0 Anti-Pattern Scan** — new grep row for perceptually non-uniform colormaps (`jet`, `hot`, `rainbow`, `hsv`, custom `LinearSegmentedColormap` without perceptual validation). Flagged as High because non-validated colormaps create false magnitude boundaries at hue transitions that do not exist in the data.
+  - **Phase 6 Data Visualization Integrity** — two new rows:
+    - **Colormap provenance** — continuous, sequential, and diverging colormaps must use a scientifically validated palette: ColorBrewer (Harrower & Brewer 2003), viridis/magma/plasma/inferno (matplotlib perceptually uniform), or cividis (colorblind-optimised). Non-validated colormaps fail under colour-vision deficiency. Grep for `cmap=`/`colorscale=`/`color_continuous_scale=` against validated allowlist. High severity.
+    - **Diverging colormap CVD safety** — three ColorBrewer diverging palettes (`RdYlGn`, `RdGy`, `Spectral`) fail under deuteranopia/protanopia. Safe alternatives listed. Medium severity.
+  - **Phase 6 Practitioner note** — explains the two-tier colour enforcement rationale: colormaps must be from a validated palette (perceptual uniformity is non-negotiable at 256 interpolated steps); semantic constants can be custom-chosen for domain meaning but must pass programmatic CVD distinguishability check (Phase 7).
+  - **Phase 7 Accessibility** — new row for semantic colour set CVD distinguishability: categorical semantic colours not drawn from a named colorblind-safe palette must pass pairwise CIEDE2000 ΔE > 20 under deuteranopia and protanopia simulation. Validates the actual perceptual property (distinguishability) rather than palette membership, allowing domain-meaningful custom colours while guaranteeing accessibility. New automated grep pattern for non-validated colormaps.
+  - **Academic foundations** — added Harrower & Brewer 2003 (ColorBrewer palette design in Munsell perceptual colour space) and Olson & Brewer 1997 (empirical colorblind safety evaluation of cartographic palettes).
+
+### Design rationale
+
+Two-tier enforcement (Option C) was chosen over blanket ColorBrewer mandate (Option B) because:
+
+1. ColorBrewer's science is strongest for continuous/ordered scales (27 of 35 palettes are sequential/diverging); its qualitative offering is thin (only 3 of 8 pass colorblind filter at 3+ classes, only Paired survives at 4+).
+2. Semantic constants (team colours, credit categories) serve domain meaning and dark-theme contrast — forcing them into Paired/Dark2/Set2 would degrade visual design for no perceptual gain.
+3. Option B degrades into exception lists ("DEFCON exempt, home/away exempt..."); Option C validates the actual property (ΔE distinguishability) programmatically, preventing decay without requiring palette membership.
+
 ## [1.17.0] - 2026-04-15
 
 ### Added
