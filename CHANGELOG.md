@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-04-15
+
+### Added
+
+- **`architecture-audit`** — Phase 0 Anti-Pattern Scan gains three new rows for silent-exception-swallow patterns and schema drift:
+  - **Silent telemetry swallow** — `except Exception: logger.warning(...)` or `except Exception: pass` in hook/callback/observer/fire-and-forget code paths. Flagged as critical data-integrity risk because warning-level logs are filtered out of standard error-log queries. Default telemetry exception handling must be raise, typed error return, or log-at-ERROR — never `logger.warning` in a fire-and-forget path.
+  - **UDF empty-return on exception** — `except Exception: return pd.DataFrame(columns=...)` or `return []` inside `applyInPandas`/`mapInPandas`/`map_partitions`/Ray actors. Flagged as critical per-group data loss because distributed frameworks concatenate UDF outputs without tracking empty returns. Must propagate with group-key context (`raise RuntimeError(f"... failed for <key>={value}")`).
+  - **Writer-to-target schema drift** — hardcoded `StructType`/`pydantic.BaseModel` in one file paired with `CREATE TABLE` DDL in another file without a programmatic reconciliation test. Flagged as critical because Delta `whenMatchedUpdateAll()` validates target columns at parse time and raises `DELTA_MERGE_UNRESOLVED_EXPRESSION` when the source schema is missing a target column.
+- **`architecture-audit`** — Phase 4 Cross-deployment contract validation gains a new "Writer/target schema reconciliation" check requiring a test that parses target DDL and asserts equality with the in-code writer schema.
+- **`architecture-audit`** — Phase 5 Data Platforms "Schema as implicit contract" row extended to explicitly cover hardcoded StructType literals paired with CREATE TABLE DDL files without reconciliation.
+- **`observability-audit`** — Phase 0 Anti-Pattern Scan gains four new rows:
+  - **Silent telemetry swallow** — same pattern as architecture-audit, scoped to observability concerns.
+  - **UDF empty-return on exception** — same pattern as architecture-audit.
+  - **Silent fallback to default value without observable signal** — `except Exception: var = default_value` patterns (hardcoded 0.5, None, False, {}) without metric/log/flag making the fallback visible.
+  - **Hook/callback registration without completion assertion test** — telemetry assumed to work based on registration, not on observed output. Requires a test that exercises the hook and asserts the output lands in the target sink.
+- **`observability-audit`** — practitioner note clarifying that a catch logging at WARNING level inside a fire-and-forget path is structurally equivalent to no logging at all. Audit must check not just *whether* the catch logs, but *at what level* and *through which observability channel*.
+
+### Worked example
+
+The three silent-swallow anti-patterns added in this release were all derived from the 2026-04-12 `luxury-lakehouse` warm-tier blocker, where:
+
+1. A schema migration left an orphaned `task_key` column in a production Delta table.
+2. The `CostEstimateHook` MERGE failed every call with `DELTA_MERGE_UNRESOLVED_EXPRESSION` at parse time.
+3. Four `except Exception: logger.warning(...)` catches in the hook and its dispatcher hid the failure for 62+ hours.
+4. The root cause only surfaced when a downstream dbt test was wired into the daily job and started firing.
+
+The new anti-patterns provide grep-based early detection of this class of bug. Field-tested against a production repo during remediation; caught 55+ instances in `src/` alone.
+
 ## [1.16.0] - 2026-04-14
 
 ### Added
