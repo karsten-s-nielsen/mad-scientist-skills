@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0] - 2026-04-21
+
+### Added
+
+- **`optimization-audit`** — Phase 0.5 gains a **Baseline currency check** sub-phase. Documentation decays: row counts (`"~2M rows"`), timing baselines (`"~2s for 232K rows"`), memory budgets, cache hit-rate targets, and throughput figures cited in comments and ADRs silently age as the system grows. The new sub-phase enumerates every numeric figure found in Phase 0.5 into a **Baseline Currency Table** (`documented value | source | date | measured value | drift factor | staleness?`), measures each against the live value (`SELECT COUNT(*)`, recent benchmark artifact, `DESCRIBE DETAIL`, or explicit "unmeasurable" flag), and flags >2× drift as a finding. Severity is keyed to how the code depends on the number: **High** if a buffer size / `LIMIT` / batch size / algorithm choice uses it, **High–Critical** if a cache-sizing, timeout, or pool constant uses it, **Low** if only a comment or docstring references it.
+- **`optimization-audit`** — Phase 12 gains a **Benchmark coverage-breadth audit** sub-phase. Existence is not coverage: a codebase can have many benchmarks and still be blind to the layer that regresses in production. The new sub-phase classifies every benchmark into one of five stack layers (**L1** pure-compute hot paths / **L2** data-layer and query / **L3** service and API / **L4** UI and end-user / **L5** pipeline and batch), produces a coverage table gated on CI integration and production-scale fixtures, and flags any layer with zero benchmarks on a user-facing path. Scoring: zero-coverage layer = Medium by default, High if SLO or incident history; benchmarks without CI gate = Medium; benchmarks on toy data = High ("100 rows passing when production is 10M is a false green"); over-represented layer while the regressing layer has zero coverage = explicit blind-spot call-out in the Phase 13 report.
+- **`optimization-audit`** — two new **Important rules** at the bottom of the skill:
+  - **Check that workarounds still win.** For every project-level "never do X" rule the codebase inherits (`SELECT DISTINCT`, `.toPandas()`, `iterrows()`, `df.cache()`, etc.), identify the chosen workaround (recursive CTE, `.limit().toPandas()`, `itertuples()`, Delta temp tables) and verify it is still faster than the forbidden pattern **at the current data scale**. Rules written at 100K rows can invert at 10M rows — a recursive CTE doing N inner `SELECT MIN` subqueries loses to `SELECT DISTINCT col` with a covering index once N grows large enough. When the workaround has become its own anti-pattern, flag it and recommend reverting to the previously-forbidden pattern with the missing enabling change.
+  - **Parallelize for large codebases.** On repos with ≥5K source files or ≥50 modules, dispatch independent phases to parallel explorer sub-agents with explicit, non-overlapping file-set scopes. Suggested split: (a) Phase 0.5 docs + tech debt, (b) Phase 5 database/query, (c) Phases 6 + 8 cache + frontend, (d) Phase 9 pipeline + dbt, (e) Phases 0 + 2 + 3 + 4 + 7 grep-wide anti-patterns; Phases 10–12 stay in the main thread. Each agent produces a severity-tagged findings table so the main thread can merge mechanically. Single-shot `Read`+`Grep` in the main thread remains correct for small codebases (<1K files).
+- **`optimization-audit`** — intro navigation block added above Phase 0 pointing operators to the two new Important Rules and the new Phase 0.5 sub-check so they are seen before the audit starts, rather than only at the bottom of a 1K-line document.
+
+### Worked example
+
+The three additions were all derived from the 2026-04 `luxury-lakehouse` warm-tier audit:
+
+1. A `"~2M rows (Pitch Control)"` code comment had drifted 4–5× without the surrounding buffer-sized code being updated — the kind of "positive problem" (more data flowing correctly) that tips queries, caches, and pipelines over a latent scale cliff. The **Baseline Currency Table** would have surfaced the gap before Phase 5 started querying indexes sized for the old value.
+2. A heavy `pytest-benchmark` suite concentrated at L1 pure-compute level masked an essentially zero-coverage L2 query layer that was the actual regressing surface in production. The **stack-layer coverage table** forces this blind spot to be named in Phase 13.
+3. A project-level "never `SELECT DISTINCT`" rule had pushed the codebase onto a recursive-CTE workaround that inverted in performance characteristics once the underlying table grew — the forbidden pattern paired with a covering index would have been faster than the rule-compliant workaround. The **Check that workarounds still win** rule encodes this as a first-class audit obligation.
+
 ## [1.18.0] - 2026-04-16
 
 ### Added
