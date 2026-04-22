@@ -55,6 +55,13 @@ Execute all applicable phases in order. Skip phases marked for a mode you are no
 
 **Phase order:** 0 → 0.5 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13
 
+**Before starting, read the "Important rules" section at the bottom of this document.** Two rules in particular shape how you run the audit:
+
+1. **Check that workarounds still win.** Project-level "never do X" rules can invert at scale. For every such rule the codebase inherits, verify the chosen workaround is still faster than the forbidden pattern at the *current* data volume, not the volume the rule was written against. See "Important rules".
+2. **Parallelize for large codebases.** On repos ≥5K source files or ≥50 modules, split phases across parallel explorer sub-agents with non-overlapping file scopes. See "Important rules" for the recommended split.
+
+**Also read Phase 0.5's "Baseline currency check" before Phase 1.** Any numeric figure cited in documentation or code comments (row counts, timings, memory budgets) should be measured against the live value; >2× drift is itself a finding and frequently explains the regression that triggered the audit.
+
 ---
 
 ### Phase 0: Anti-Pattern Scan (Audit mode)
@@ -305,7 +312,28 @@ For each match, record:
 
 Findings from this phase should be **cross-referenced** in the final report (Phase 13). For each code-level finding, note whether it was already tracked in documentation. For documented concerns not caught by code scanning, add them to the findings with source attribution.
 
-**Output:** Table of documented performance concerns with status, related code paths, and cross-reference notes for later phases.
+#### Baseline currency check
+
+Documentation decays. Comments and ADRs often quote row counts, timing baselines, or table sizes that were true when written but have since drifted — sometimes by orders of magnitude. When code was sized for those old numbers, the drift itself is the scale cliff.
+
+For every documented numeric baseline you find in this phase — row counts (`"~2M rows"`), timing (`"~2s for 232K rows"`), memory budgets (`"<5M rows"`), cache hit-rate targets, throughput figures — record it in a **Baseline Currency Table**:
+
+| Documented value | Source (file:line) | Date stated (if known) | Current value (measured) | Drift factor | Staleness? |
+|------------------|---------------------|-------------------------|--------------------------|--------------|-----------|
+
+**How to measure "current value":**
+- For row counts: `SELECT COUNT(*)` against the live table, or a recent `EXPLAIN ANALYZE` that shows actual rows, or the latest job log that prints a count. If none available, say so explicitly.
+- For timing: the most recent benchmark artifact or CI log. If none exists, flag it — that's itself a Phase 12 finding.
+- For table sizes: `df.memory_usage(deep=True).sum()` output, Delta `DESCRIBE DETAIL`, or cloud storage bucket stats.
+
+**Flag any row >2× drift as a finding** at severity proportional to how the code uses the number:
+- If a buffer size, `LIMIT` clause, batch size, or algorithm choice depends on the stale number → **High** (the code is sized for a reality that no longer exists)
+- If a comment or docstring only → **Low** (documentation hygiene)
+- If a cache-sizing, timeout, or pool constant depends on it → **High or Critical** depending on saturation risk
+
+**Why this matters:** code comments like `"~2M rows (Pitch Control)"` age invisibly. A fact table that has grown 4-5× since the comment was written is the kind of "positive problem" (more data flowing correctly) that tips queries, caches, and pipelines over a latent scale cliff. This check surfaces the discrepancy before Phase 5 starts querying the indexes.
+
+**Output:** Table of documented performance concerns with status, related code paths, cross-reference notes for later phases, **and a Baseline Currency Table for every numeric figure cited in documentation or code comments.**
 
 ---
 
@@ -898,7 +926,41 @@ Load `templates/profiling-benchmarking.md` for the full profiling and benchmarki
 | Any | `# TODO.*performance\|# TODO.*benchmark\|# FIXME.*slow` | Acknowledged performance debt |
 | Test files | `time\.sleep\|Thread\.sleep` in performance tests | Artificial delays invalidate results |
 
-**Output:** Profiling and benchmarking posture assessment with gaps and recommended tooling.
+#### Benchmark coverage-breadth audit
+
+A codebase can have many benchmarks and still be blind to the layer that regresses in production. Existence is not coverage. Enumerate the existing benchmarks and classify each by which layer of the stack it exercises. Any layer with zero benchmarks — especially the layer closest to user-facing latency — is a finding regardless of how thorough the existing suite is.
+
+**Stack-layer classification (adapt to the project):**
+
+| Layer | What it measures | Typical tooling |
+|-------|------------------|-----------------|
+| **L1: Pure-compute hot paths** | Vectorized numerical code, parsers, tight loops | `pytest-benchmark`, `timeit`, `criterion` (Rust), `JMH` (Java) |
+| **L2: Data-layer / query** | DB query latency at production row counts, ORM round-trips, cache hit ratio | `pytest-benchmark` with a real DB fixture, `EXPLAIN ANALYZE` snapshots, `pgbench`, `sysbench` |
+| **L3: Service / API** | HTTP endpoint latency, payload size, serialization cost, request handler throughput | `locust`, `k6`, `wrk`, `vegeta`, `autocannon` |
+| **L4: UI / end-user** | Page load, interaction latency, bundle size, WebSocket churn, render time | Playwright + tracing, Lighthouse CI, WebPageTest, browser `performance.mark()` |
+| **L5: Pipeline / batch** | ETL wall clock, job duration distribution, data-volume scaling curves | dbt run artifacts, Spark event logs, cloud-job timing metrics |
+
+**Audit procedure:**
+
+1. List every benchmark file, test marker, or CI step in the repo.
+2. For each, assign exactly one layer (L1–L5).
+3. Produce the coverage table:
+
+   | Layer | # benchmarks | Representative example | Gated in CI? | At production scale? |
+   |-------|--------------|------------------------|--------------|-----------------------|
+   | L1 | ... | ... | Yes/No | Yes/No |
+   | L2 | ... | ... | Yes/No | Yes/No |
+   | ... | ... | ... | ... | ... |
+
+4. **Scoring:**
+   - **Zero benchmarks in any layer** = Medium finding by default. Elevate to High if that layer has produced a production incident, a documented SLO, or is on a user-facing path.
+   - **Benchmarks exist but no CI gate** = Medium. The suite cannot catch regressions it does not run against.
+   - **Benchmarks run on toy data** (100 rows when production is 10M) = High. CLAUDE.md rule: "a benchmark that passes on 100 rows but OOMs on 3M rows is a false green."
+   - **One or two layers over-represented** while the regressing layer has zero coverage = explicitly call out the blind spot in the Phase 13 report.
+
+**Why this matters:** the most common failure mode of benchmark-heavy codebases is to heavily instrument the layer the original engineer found interesting (usually L1 compute) while leaving the layer that actually regresses in production (usually L2 query or L4 UI) completely unmeasured. Enumerate first; judge second.
+
+**Output:** Profiling and benchmarking posture assessment with gaps and recommended tooling, **including the stack-layer coverage table and an explicit call-out of the lowest-covered layer that sits on a user-facing path.**
 
 ---
 
@@ -1035,7 +1097,9 @@ If the project's ROADMAP or planning docs describe optimization strategies not y
 - **No assumptions.** Read the actual code, configs, and infrastructure files. Don't assume performance is good because a framework is used.
 - **Verify fixes.** After fixing a performance issue, re-run the check that found it to confirm the fix works.
 - **Respect existing patterns.** If the project has established performance patterns, extend them rather than introducing new ones.
+- **Check that workarounds still win.** For every project-level "never do X" rule (`SELECT DISTINCT`, `.toPandas()`, `iterrows()`, `df.cache()`, etc.), identify the codebase's chosen workaround (recursive CTE, `.limit().toPandas()`, `itertuples()`, Delta temp tables, etc.) and verify it is still faster than the forbidden pattern **at the current data scale**. Rules that made sense at 100K rows can invert at 10M rows; a recursive CTE doing N inner `SELECT MIN` subqueries will lose to `SELECT DISTINCT col` with a covering index once N grows large enough. If the workaround has become its own anti-pattern, flag it as a finding and recommend reverting to the previously forbidden pattern (with the missing index or other enabling change). This applies to any rule inherited from CLAUDE.md, ADRs, style guides, or comments — do not assume the rule still holds; verify.
 - **Conditional phases.** Phase 8 (Frontend) only if frontend code exists. Phase 9 (Pipeline) only if pipeline tools detected. Phase 10 (Container) only if Dockerfiles/K8s exist. Phase 11 (Cloud Cost) only if IaC/cloud config exists. Skip irrelevant phases to keep signal-to-noise high.
 - **Scope awareness.** Don't flag managed-service built-in optimization as a finding (e.g., auto-scaling managed by a PaaS).
 - **Single tier.** There is no Standard/Enterprise split. All checks are actionable with free/open-source tools.
 - **Prioritize.** Fix Critical and High findings. Track Medium and Low in the backlog. Don't let perfect be the enemy of fast.
+- **Parallelize for large codebases.** On repos with ≥5K Python / JS / Go files or ≥50 modules, dispatch independent phases to parallel explorer sub-agents with explicit, non-overlapping file-set scopes — typical split: (a) Phase 0.5 docs + tech debt, (b) Phase 5 database/query, (c) Phases 6 + 8 cache + frontend, (d) Phase 9 pipeline + dbt, (e) Phases 0 + 2 + 3 + 4 + 7 grep-wide anti-patterns. Keep Phases 10, 11, 12 in the main thread — they are typically small and integrate directly into Phase 13. When parallelizing, brief each agent with the exact file globs or directory roots to scan so two agents never read the same file, and require each to produce a severity-tagged findings table so the main thread can merge them mechanically. Single-shot `Read`+`Grep` in the main thread is correct for small codebases (<1K files) or targeted audits — parallelization is overhead-positive only when the codebase is large enough that a single-threaded read would exhaust the main context.
