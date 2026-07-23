@@ -1,6 +1,6 @@
 ---
 name: c4
-description: Creates interactive C4 model architecture diagrams using Structurizr DSL — the official C4 notation by Simon Brown. Produces self-contained single-file HTML visualizations with embedded SVGs rendered locally via Java 21+ and the Structurizr export pipeline (structurizr.war + plantuml.jar). Generates System Context, Container, Component, Dynamic, and Deployment diagrams with tabbed navigation, DSL panel, and copyable Structurizr DSL source. Requires Java 21+. Use when the user asks for architecture diagrams, C4 diagrams, system diagrams, or wants to visualize software architecture.
+description: Creates interactive C4 model architecture diagrams using Structurizr DSL — the official C4 notation by Simon Brown. Produces self-contained single-file HTML visualizations with embedded SVGs rendered locally via Java 21+ and the Structurizr export pipeline (structurizr.war + plantuml.jar). Generates System Context, Container, Component, Dynamic, and Deployment diagrams with tabbed navigation, DSL panel, and copyable Structurizr DSL source. Requires Java 21+ and Graphviz (dot). Use when the user asks for architecture diagrams, C4 diagrams, system diagrams, or wants to visualize software architecture.
 ---
 
 # C4 Architecture Diagram Builder
@@ -367,6 +367,68 @@ views {
 
 Available shapes: `Box`, `RoundedBox`, `Circle`, `Ellipse`, `Hexagon`, `Cylinder`, `Pipe`, `Person`, `Robot`, `Folder`, `WebBrowser`, `MobileDeviceLandscape`, `MobileDevicePortrait`, `Component`.
 
+## Readability & Navigation
+
+Large diagrams become unreadable two ways: individual boxes grow too wide, and a
+single view holds too many elements. Three tunable levers (defaults chosen from
+empirical render measurements) address both, plus bidirectional drill-down ties
+the views together.
+
+| Constant | Unit | Governs | Default |
+|---|---|---|---|
+| `MAX_BOX_DESCR_CHARS` | characters | Authoring cap on each element description — keeps text human-readable | `200` |
+| `BOX_WRAP_WIDTH_PX` | pixels | Render wrap — forces multi-line text so a box stays narrow | `150` |
+| `MAX_ELEMENTS_PER_VIEW` | elements | Subdivision guideline — split a view when it exceeds this | `15` |
+
+**Character cap vs pixel wrap are different levers.** The character cap
+(`MAX_BOX_DESCR_CHARS`) stops a box from holding an essay; the pixel wrap
+(`BOX_WRAP_WIDTH_PX`) stops even a capped 200-char line from rendering as one
+ultra-wide row. C4's stock wrap is 200px; `150` yields modestly narrower boxes.
+
+- **Authoring rule:** cap each element `description` at `MAX_BOX_DESCR_CHARS` (200)
+  characters. A box cannot shrink below its widest unbreakable token (a long word,
+  URL, or the `<<stereotype>>` label) — the pixel wrap helps typical prose, not a
+  single long identifier.
+- **Subdivision rule:** when a container view would exceed ~`MAX_ELEMENTS_PER_VIEW`
+  (15) *boxes* (people/systems/containers/components in scope — relationships and
+  boundary clusters do not count), emit **one `Component_<containerId>` view per
+  container** instead of a single combined `Components` view. This is a modeling
+  decision you (or Claude) make — the tool does not measure or enforce it.
+- **View-key naming convention** (powers grouping *and* drill-down):
+
+  ```
+  SystemContext
+  Containers
+  Component_<containerId>
+  Dynamic_<flowId>
+  Deployment_<envId>
+  ```
+
+  Structurizr exports `structurizr-<ViewKey>.svg`; the assembler groups tabs by
+  the key prefix and drills from a container box into its `Component_<id>` view.
+  A small system may keep the combined `Components` key — it is still navigable.
+
+- **Drill-down (single software system):** in the generated HTML, clicking a
+  container box that has a deeper Component view switches to that view; each detail
+  view shows a breadcrumb (`Context › Containers › api`) to navigate back up. Only
+  boxes with a target are clickable. The drill axis is `SystemContext → Containers
+  → Component_<id>`; Deployment tabs are navigation leaves, and workspaces with
+  more than one software system are out of scope for drill-down (the singular
+  `Containers`/`SystemContext` keys would collide).
+
+- **Coverage lint (automated, non-fatal):** the assembler flags any container
+  that declares `component` children but has **no `component` view scoped to it**
+  — its Level-3 decomposition was authored yet renders nowhere. This is the mirror
+  image of subdivision: subdivision splits an over-full view; the lint catches a
+  decomposition that was modeled and then forgotten. It prints
+  `WARN: container '<name>' (<id>) has N component(s) but no
+  component <id> "Component_<id>" view.` and does **not** fail the build (the model
+  stays internally consistent — the container is correctly left inert for
+  drill-down). Resolve it by either adding the missing view
+  (`component <id> "Component_<id>" { include * autoLayout }`) or, if the container
+  genuinely does not warrant a Level-3 view, deleting its `component` declarations
+  so the model does not carry invisible detail.
+
 ## Rendering workflow
 
 Diagrams are rendered locally via a two-stage pipeline: Structurizr exports DSL to PlantUML C4, then plantuml.jar renders PlantUML to SVG. Java 21+ is required for both stages.
@@ -449,7 +511,37 @@ java -jar ~/.claude/tools/structurizr.war export -workspace <name>.dsl -format p
 
 This produces one `.puml` file per view defined in the DSL. Each file corresponds to a view (e.g., `structurizr-SystemContext.puml`, `structurizr-Container.puml`).
 
+#### 3c-2. Inject the pixel wrap width (readability)
+
+Before rendering, narrow the boxes by injecting `skinparam wrapWidth` into each
+exported `.puml`. This MUST happen after export and before render, and the
+assembler places the directive after the **last** `!include <C4/...>` line — every
+C4 sub-include re-emits the stock `wrapWidth 200`, so an earlier placement (or the
+`plantuml.skinparams` view property) is silently clobbered.
+
+```bash
+# macOS/Linux (SKILL_DIR resolved as in Step 3f):
+python "$SKILL_DIR/c4_assemble.py" . --inject-wrap-width <temp-dir>
+```
+
+This rewrites every `<temp-dir>/*.puml` in place (default 150px; override with
+`--wrap-width N`). Skip only if you deliberately want C4's default 200px boxes.
+
 #### 3d. Render PlantUML to SVG
+
+**First, verify Graphviz is available to PlantUML** (the entire C4 pipeline needs
+it — see "Graphviz Not Found" below). Gate on PlantUML's own check, NOT `dot -V`
+or `which dot` (PlantUML resolves `dot` via its own search paths, not `$PATH`):
+
+```bash
+# macOS/Linux:
+java -jar ~/.claude/tools/plantuml.jar -testdot
+```
+
+Exit 0 with "Installation seems OK. File generation OK" → proceed. Any other
+result → see "Graphviz Not Found". Without `dot`, PlantUML does NOT fall back: it
+emits a green "Cannot find Graphviz" placeholder SVG **with exit code 0**, which
+`c4_assemble.py` will then reject (0 element nodes). Fix Graphviz, don't bypass.
 
 ```bash
 # Windows (PowerShell):
@@ -487,10 +579,11 @@ SKILL_DIR="$(dirname "$(find ~/.claude -name c4_assemble.py -path '*/skills/c4/*
 # Run: auto-detects views from SVG filenames in temp dir
 python "$SKILL_DIR/c4_assemble.py" /path/to/project --svg-dir /tmp/c4-render
 
-# Or specify views explicitly
+# Or specify views explicitly (one --views flag, space-separated specs;
+# repeating --views would clobber all but the last because it is nargs="*")
 python "$SKILL_DIR/c4_assemble.py" /path/to/project --svg-dir /tmp/c4-render \
-    --views "system-context:System Context:structurizr-SystemContext.svg" \
-    --views "containers:Containers:structurizr-Containers.svg"
+    --views "SystemContext:System Context:structurizr-SystemContext.svg" \
+            "Containers:Containers:structurizr-Containers.svg"
 ```
 
 The script auto-detects views from SVG filenames, extracts the system name from the DSL workspace declaration, cleans all SVGs with verification, and writes `architecture.html` alongside the DSL file. If any SVG still contains title content after cleaning, the script aborts with an error.
@@ -515,6 +608,28 @@ Then **ask the user** whether to:
 2. Cancel and save the `.dsl` file only (they can render later with any Structurizr-compatible tool)
 
 **Note:** There is no server fallback for this skill. Structurizr's export command is a Java tool. If the user cannot install Java 21+, save the `.dsl` file and inform them it can be rendered with any tool that supports Structurizr DSL (e.g., the Structurizr web editor at structurizr.com).
+
+### Graphviz Not Found — Installation Guidance
+
+Graphviz (`dot`) is a **hard prerequisite on par with Java 21+**. The **entire** C4
+pipeline — SystemContext, Containers, Component, Dynamic, and Deployment views, not
+just Container/Component — routes through PlantUML's `dot`-based layout. Without it,
+PlantUML silently emits a "Cannot find Graphviz" placeholder (exit code 0), which
+the assembler rejects.
+
+**Installation commands by platform:**
+
+| Platform | Command |
+|----------|---------|
+| Windows | `winget install -e --id Graphviz.Graphviz` |
+| macOS | `brew install graphviz` |
+| Linux (Debian/Ubuntu) | `sudo apt install graphviz` |
+| Linux (Fedora) | `sudo dnf install graphviz` |
+
+After installing, confirm with `java -jar ~/.claude/tools/plantuml.jar -testdot`
+(expect "Installation seems OK"). There is **no** `!pragma layout smetana` fallback
+in this skill — Graphviz is required so checked-in diagrams keep full layout
+fidelity.
 
 ### Important notes
 
@@ -542,257 +657,44 @@ The `styles` block in the DSL can override these defaults. Include the standard 
 
 ## HTML template pattern
 
-The HTML viewer uses **pill-style tabs** for navigation with the **DSL source as a separate tab** (not a permanent sidebar). Diagrams render at their **natural size** inside a white card — if the viewport is narrower than the diagram, a horizontal scrollbar appears instead of shrinking the image.
+The viewer is **generated** by `c4_assemble.py` (the `TEMPLATE` string plus `build_html`), not hand-authored. `c4_assemble.py` is the single source of truth for the exact markup, CSS, and JS; this section describes the structure it emits so you can recognize and reason about the output. If you change the layout, change the template in `c4_assemble.py` and update this section — do not paste a competing copy here.
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>[System Name] &mdash; C4 Architecture</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; }
+### Layout: two-level grouped tabs + breadcrumbs + drill-down
 
-    body {
-      background: #1a1a2e;
-      color: #e0e0e0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 24px 32px;
-      line-height: 1.6;
-    }
+The old single row of flat pills was replaced by a two-level navigation that scales past ~6 views:
 
-    h1 {
-      font-size: 1.8rem;
-      font-weight: 700;
-      margin: 0 0 8px 0;
-      color: #ffffff;
-    }
+- **Group row** (`.grp` buttons, `role="tab"`) — top-level C4 levels in a fixed order (`GROUP_ORDER`): Context, Containers, Components, Dynamic, Deployment, then a synthetic **DSL** group. Clicking a group calls `c4ShowGroup(g)`, which activates that group's first view.
+- **Sub-tab row** (`.subrow` / `.subtab`) — shown only for a group with **more than one** view (e.g. several split `Component_<container>` views under **Components**). A single-view group renders an empty `.subrow` placeholder and no sub-tabs. Sub-tab labels prefer the container's DSL display name (via `build_view_labels`) over the raw key suffix.
+- **Breadcrumbs** (`.breadcrumb`) — a Component panel shows `Context › Containers › <current>`; a Container panel shows `Context › <current>`. Crumbs are emitted only for ancestor views that actually rendered (`build_breadcrumbs` gates on the existing view keys), so a crumb never points at a missing panel.
+- **Panels** (`.tab-content`, one per view + the DSL panel) — the active panel is shown; others are `display:none`. Each panel is focusable (`tabindex="-1"`) and focused on activation for keyboard users.
 
-    p {
-      margin: 0 0 24px 0;
-      color: #a0a0b8;
-      font-size: 0.95rem;
-    }
+### View keys, tab ids, and grouping
 
-    code {
-      background: #16213e;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-      font-size: 0.9em;
-      color: #7ec8e3;
-    }
+- `parse_view_key(raw_key)` maps a Structurizr view key to `(group, sub_label)` — e.g. `SystemContext → (Context, "System Context")`, `Component_api → (Components, "api")`. Unknown keys become their own group.
+- `view_key_to_tab_id(raw_key)` is the **single source of truth** for the DOM id / `data-tab` / `c4ShowTab('…')` argument: lowercase, `_→-`, strip to `[a-z0-9-]`. It is emitted **unescaped** into attribute and JS-string contexts, so it must be a safe slug. A degenerate key with no alphanumerics falls back to a stable `view-<hash>` id (never an empty id).
+- The synthetic DSL panel reserves tab id `dsl` (see the `_DSL_VIEW` constant). Two guards warn instead of silently shadowing a panel: `find_tab_id_collisions` (run over the rendered views **plus** `_DSL_VIEW`) catches two *distinct* keys colliding on any id, and `find_reserved_id_shadow` catches a user view claiming a reserved id — including the exact `raw_key='DSL'` case that the collision check's per-id key-set would otherwise dedup away.
 
-    /* --- Pill-style tabs --- */
-    .tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
+### Drill-down (click-through between levels)
 
-    .tab {
-      background: #16213e;
-      color: #a0a0b8;
-      border: 1px solid #2a2a4a;
-      border-radius: 24px;
-      padding: 8px 20px;
-      font-size: 0.9rem;
-      font-family: inherit;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      outline: none;
-    }
+`build_drilldown_map` maps each container's dotted alias to the Component view scoped to it; `wire_drilldown` attaches `role="button"`, `tabindex="0"`, keyboard handlers, and an `onclick="c4ShowTab('<component-tab>')"` to the matching entity `<g>` in the **container** SVG. Clickable boxes carry a persistent dashed outline (`.svg-container [role="button"]`) so they read as clickable without hovering. Only views that actually rendered a panel are wired (the injected `c4ShowTab` target can never dangle). Non-ASCII scope names, empty aliases, and whole-model alias collisions are skipped with a warning.
 
-    .tab:hover {
-      background: #1f2b4d;
-      color: #e0e0e0;
-      border-color: #3a3a5a;
-    }
+### JS runtime
 
-    .tab.active {
-      background: #438DD5;
-      color: #ffffff;
-      border-color: #438DD5;
-    }
+Two embedded JSON maps drive navigation: `C4_TAB_GROUP` (tab id → group) and `C4_GROUP_TABS` (group → ordered tab ids). Both are emitted via `_json_for_script` (which `\uXXXX`-escapes `<`, `>`, `&` so a view key containing `</script>` cannot break out of the block). `c4ShowGroup` / `c4ShowTab` toggle the `active` class across groups, sub-rows, sub-tabs, and panels, and set `aria-selected`. The DSL panel's **Copy** button (`copyDSL`) uses `navigator.clipboard` with a `document.execCommand('copy')` fallback.
 
-    /* --- Tab content panels --- */
-    .tab-content {
-      display: none;
-    }
+### Escaping contract (why several escapes differ)
 
-    .tab-content.active {
-      display: block;
-    }
+- **Tab ids** — slugified by `view_key_to_tab_id`; safe in `id=`, `data-tab=`, `onclick=`, and as a JS map key.
+- **Group `onclick` argument** — a group name flows into `onclick="c4ShowGroup('<g>')"`, a JS-string-inside-an-HTML-attribute. HTML-escaping is **wrong** there (the browser HTML-decodes `&#x27;` to `'` before the JS parser runs), so `_js_str_in_attr` emits `\uXXXX` for anything outside a conservative safe set. The `data-group=` attribute and visible text use ordinary `html.escape`.
+- **System name, labels, breadcrumb text** — ordinary `html.escape` (plain HTML text/attribute context).
+- **Embedded SVG** — cleaned by `clean_svg` (strips title/PI/active content) and verified by `verify_clean` before embedding; see *SVG Cleaning* in the `c4_assemble.py` docstring.
 
-    /* --- SVG diagram container (natural size, scroll if wider than viewport) --- */
-    .svg-container {
-      background: #ffffff;
-      border-radius: 8px;
-      padding: 16px;
-      overflow-x: auto;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-      border: 1px solid #2a2a4a;
-    }
+### Visual conventions (unchanged)
 
-    .svg-container svg {
-      display: block;
-      margin: 0 auto;
-      height: auto;
-    }
-
-    /* --- DSL source panel --- */
-    .dsl-panel {
-      position: relative;
-      background: #16213e;
-      border-radius: 8px;
-      border: 1px solid #2a2a4a;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-      overflow: hidden;
-    }
-
-    .dsl-panel pre {
-      margin: 0;
-      padding: 20px;
-      overflow-x: auto;
-      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-      font-size: 0.85rem;
-      line-height: 1.6;
-      color: #c8d0e0;
-      tab-size: 4;
-    }
-
-    .dsl-panel code {
-      background: none;
-      padding: 0;
-      border-radius: 0;
-      color: inherit;
-      font-size: inherit;
-    }
-
-    .copy-btn {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      background: #2a2a4a;
-      color: #a0a0b8;
-      border: 1px solid #3a3a5a;
-      border-radius: 6px;
-      padding: 6px 14px;
-      font-size: 0.8rem;
-      font-family: inherit;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      z-index: 10;
-    }
-
-    .copy-btn:hover {
-      background: #3a3a5a;
-      color: #e0e0e0;
-    }
-
-    .copy-btn.copied {
-      background: #2e7d32;
-      color: #ffffff;
-      border-color: #2e7d32;
-    }
-
-    @media (max-width: 600px) {
-      body { padding: 16px; }
-      h1 { font-size: 1.4rem; }
-      .tab { padding: 6px 14px; font-size: 0.8rem; }
-    }
-  </style>
-</head>
-<body>
-  <h1>[System Name] &mdash; C4 Architecture</h1>
-  <p>Generated from <code>architecture.dsl</code> using the Structurizr &rarr; PlantUML rendering pipeline.</p>
-
-  <div class="tabs">
-    <!-- One pill tab per diagram level, plus DSL tab last -->
-    <button class="tab active" data-tab="system-context">System Context</button>
-    <button class="tab" data-tab="containers">Containers</button>
-    <!-- ... more levels as needed ... -->
-    <button class="tab" data-tab="dsl">Structurizr DSL</button>
-  </div>
-
-  <!-- One tab-content per diagram level -->
-  <div id="system-context" class="tab-content active">
-    <div class="svg-container">
-      <!-- Embedded SVG goes here -->
-      <svg xmlns="http://www.w3.org/2000/svg">...</svg>
-    </div>
-  </div>
-
-  <div id="containers" class="tab-content">
-    <div class="svg-container">
-      <svg xmlns="http://www.w3.org/2000/svg">...</svg>
-    </div>
-  </div>
-
-  <!-- DSL source tab -->
-  <div id="dsl" class="tab-content">
-    <div class="dsl-panel">
-      <button class="copy-btn" id="copyBtn" onclick="copyDSL()">Copy</button>
-      <pre><code id="dsl-source"><!-- HTML-escaped DSL source goes here --></code></pre>
-    </div>
-  </div>
-
-  <script>
-    // Tab switching
-    document.querySelectorAll('.tab').forEach(function(tab) {
-      tab.addEventListener('click', function() {
-        document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
-        document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
-        tab.classList.add('active');
-        document.getElementById(tab.getAttribute('data-tab')).classList.add('active');
-      });
-    });
-
-    // Copy DSL to clipboard
-    function copyDSL() {
-      var dslText = document.getElementById('dsl-source').textContent;
-      var btn = document.getElementById('copyBtn');
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(dslText).then(function() {
-          btn.textContent = 'Copied!';
-          btn.classList.add('copied');
-          setTimeout(function() {
-            btn.textContent = 'Copy';
-            btn.classList.remove('copied');
-          }, 2000);
-        });
-      } else {
-        var textarea = document.createElement('textarea');
-        textarea.value = dslText;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        btn.textContent = 'Copied!';
-        btn.classList.add('copied');
-        setTimeout(function() {
-          btn.textContent = 'Copy';
-          btn.classList.remove('copied');
-        }, 2000);
-      }
-    }
-  </script>
-</body>
-</html>
-```
-
-**Key design decisions:**
-
-- **Pill tabs** — Rounded filled buttons are more visually distinct and easier to target than underline tabs
-- **DSL as a separate tab** — Keeps the diagram view uncluttered; the DSL source is one click away, not always consuming horizontal space
-- **Natural SVG size** — Diagrams render at their intrinsic dimensions. No `max-width: 100%` or `width: 100%`. If the viewport is narrower, the `.svg-container` provides a horizontal scrollbar via `overflow-x: auto`
-- **White SVG card** — C4-PlantUML renders with a white background, so the white card provides a seamless look. The dark border and shadow separate it from the dark page background
-- **Clipboard fallback** — The copy function includes a `document.execCommand('copy')` fallback for contexts where `navigator.clipboard` is unavailable
+- **Pill tabs** on a dark page; the active group/sub-tab is filled (`#438DD5` / `#2a5a8a`).
+- **Natural SVG size** inside a white card — no `max-width`/`width` scaling; `.svg-container` scrolls horizontally (`overflow-x:auto`) when the diagram is wider than the viewport.
+- **DSL as its own group/panel**, not a permanent sidebar — the diagram view stays uncluttered and the full Structurizr workspace source is one click away, with a Copy button.
+- **HTML entities for special characters** (`&mdash;`, `&rarr;`) — never literal Unicode, which can corrupt through shell/encoding chains.
 
 **Note:** The DSL panel shows the complete Structurizr DSL workspace source (not the intermediate PlantUML). Since Structurizr DSL is model-first, the full workspace is the canonical source. The Copy button copies the Structurizr DSL.
 
@@ -883,7 +785,7 @@ When analyzing actual code:
 - **Using PlantUML syntax** — This skill uses Structurizr DSL, not PlantUML. Don't use `@startuml`, `!include`, `Rel()`, or PlantUML macros.
 - **Identifier conflicts** — Each element needs a unique identifier within its scope. Use descriptive names like `webApp`, `apiService`, not `a`, `b`.
 - **Mixing abstraction levels** — Don't put components directly in views meant for containers. Use the appropriate view type.
-- **Too many elements** — Keep each level to 5-15 elements for readability
+- **Too many elements** — Keep each view to ~15 element boxes (`MAX_ELEMENTS_PER_VIEW`); split a dense system into per-container `Component_<id>` views (see "Readability & Navigation")
 - **Missing descriptions** — Every element and relationship should have a meaningful description
 - **No external systems** — Context diagrams must show what's OUTSIDE your system boundary
 - **Skipping the technology tag** on containers/components — always specify (e.g., "React SPA", "PostgreSQL", "Spring Boot")

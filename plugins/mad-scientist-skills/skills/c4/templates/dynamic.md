@@ -81,7 +81,7 @@ workspace "System Name" "Dynamic diagram" {
     }
 
     views {
-        dynamic system "Dynamic-PlaceOrder" "User Places an Order" {
+        dynamic system "Dynamic_PlaceOrder" "User Places an Order" {
             user -> spa "Submits order form"
             spa -> api "POST /api/orders with cart payload"
             api -> idp "Validates auth token"
@@ -138,7 +138,7 @@ workspace "System Name" "Dynamic diagram" {
 Example with container scope (component-level flow):
 
 ```
-dynamic api "Dynamic-AuthFlow" "Authentication Flow" {
+dynamic api "Dynamic_AuthFlow" "Authentication Flow" {
     authMw -> idp "Validates JWT token"
     authMw -> userCtrl "Passes authenticated request"
     userCtrl -> userSvc "Delegates to service layer"
