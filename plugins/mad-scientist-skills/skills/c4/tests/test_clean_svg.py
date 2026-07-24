@@ -204,5 +204,84 @@ class HandlerAnchoredToStartTagTest(unittest.TestCase):
         self.assertIn('width="1"', out)
 
 
+class VerifyCleanBypassRegressionTest(unittest.TestCase):
+    """Fail-closed regression (Finding 1): active content that evades clean_svg's
+    deliberately-conservative strip must still ABORT at the verify gate, not ship.
+
+    Two evasion shapes the whitespace-only guards missed:
+    - SLASH-separated handlers. HTML accepts `/` as an attribute separator, so
+      `<svg/onload=...>` parses as `<svg onload=...>` and fires on load — no click,
+      no whitespace before `on`. The guard must anchor on `[\\s/]`, not `\\s`.
+    - OBFUSCATED dangerous schemes. Browsers HTML-decode an href and strip control
+      chars from the scheme before resolving it, so `jav&#x61;script:` and
+      `java\\tscript:` both become `javascript:`. A raw-substring scan misses them;
+      the gate must normalize (unescape + strip control chars) before matching, and
+      also reject `data:text/html`.
+
+    clean_svg is not asked to surgically neutralize these hostile shapes (PlantUML
+    never emits them) — the gate simply refuses to ship them."""
+
+    def test_aborts_on_slash_separated_svg_onload(self):
+        # <svg/onload=...> executes immediately on parse — the worst case.
+        with self.assertRaises(SystemExit):
+            c4_assemble.verify_clean("x", '<svg/onload="alert(1)"><rect/></svg>')
+
+    def test_aborts_on_slash_separated_handler_on_child(self):
+        with self.assertRaises(SystemExit):
+            c4_assemble.verify_clean("x", '<g class="entity"/onclick="x()"></g>')
+
+    def test_aborts_on_entity_obfuscated_javascript_href(self):
+        # jav&#x61;script: -> javascript: after HTML-entity decoding.
+        with self.assertRaises(SystemExit):
+            c4_assemble.verify_clean(
+                "x", '<a xlink:href="jav&#x61;script:alert(1)">x</a>')
+
+    def test_aborts_on_control_char_obfuscated_javascript_href(self):
+        # Embedded tab: browsers ignore control chars in the scheme.
+        with self.assertRaises(SystemExit):
+            c4_assemble.verify_clean(
+                "x", '<a xlink:href="java\tscript:alert(1)">x</a>')
+
+    def test_aborts_on_data_text_html_href(self):
+        with self.assertRaises(SystemExit):
+            c4_assemble.verify_clean(
+                "x", '<a xlink:href="data:text/html,<b>x">y</a>')
+
+    # --- must NOT over-abort on legitimate PlantUML output ---
+    def test_passes_on_data_image_href(self):
+        try:
+            c4_assemble.verify_clean(
+                "x", '<image xlink:href="data:image/png;base64,AAAA"/><rect/>')
+        except SystemExit:
+            self.fail("verify_clean aborted on a legitimate data:image icon")
+
+    def test_passes_on_fragment_and_https_href(self):
+        # #fragment refs and ordinary https links (entity-encoded `&` in the query
+        # is normal) must survive the normalized scheme check.
+        try:
+            c4_assemble.verify_clean(
+                "x", '<a xlink:href="#node1"><rect/></a>'
+                     '<a href="https://example.com/x?a=1&amp;b=2">y</a>')
+        except SystemExit:
+            self.fail("verify_clean aborted on benign #fragment / https href")
+
+    def test_passes_when_scheme_word_is_only_a_query_param(self):
+        # 'javascript' inside a query value is not an executable scheme; the
+        # anchored (start-of-value) match must not fire on it.
+        try:
+            c4_assemble.verify_clean(
+                "x", '<a href="https://example.com/?next=javascript">y</a>')
+        except SystemExit:
+            self.fail("verify_clean aborted on a benign 'javascript' query value")
+
+    def test_slash_handler_guard_ignores_prose_slash(self):
+        # A `/` in <text> prose (not a start-tag attribute separator) must not
+        # trip the guard — mirrors the existing online=true false-positive tests.
+        try:
+            c4_assemble.verify_clean("x", '<svg><text>a/b online=true</text></svg>')
+        except SystemExit:
+            self.fail("verify_clean aborted on benign prose containing a slash")
+
+
 if __name__ == "__main__":
     unittest.main()

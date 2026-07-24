@@ -49,7 +49,10 @@ SVG Cleaning (per C4 skill spec):
     3. Strips <title>...</title> elements
     4. Strips <g class="title"[^>]*>...</g> groups (handles extra attributes)
     5. Strips active content — <script>/<foreignObject> blocks, on*= handlers,
-       and javascript:/vbscript: hrefs — while preserving data:image/# links
+       and javascript:/vbscript: hrefs — while preserving data:image/# links.
+       Scoped to inert PlantUML output; hostile shapes it cannot safely rewrite
+       (slash-separated handlers, obfuscated schemes) fail-closed at step 6
+       rather than being neutralized in place — see clean_svg's docstring.
     6. Verifies each SVG is clean before embedding (mandatory check; aborts on leak)
 
 Output:
@@ -129,6 +132,16 @@ def clean_svg(content: str) -> str:
     <foreignObject> blocks, drop on*= event-handler attributes, and neutralize
     javascript:/vbscript: href schemes. Benign PlantUML output — embedded
     `data:image/...` icons and `#fragment` links — is deliberately preserved.
+
+    Scope (read before trusting this as a boundary): this is best-effort
+    hardening of PlantUML's own (inert) output plus a fail-closed `verify_clean`
+    gate — NOT a general-purpose sanitizer for arbitrary untrusted SVG (regex is
+    the wrong tool for that). clean_svg only rewrites shapes it can neutralize
+    WITHOUT risking corruption of benign markup (quoted, whitespace-separated
+    handlers; literal javascript:/vbscript:). Anything it cannot safely rewrite —
+    slash-separated handlers (`<svg/onload=...>`), or entity/control-char
+    obfuscated schemes (`jav&#x61;script:`) — is left for verify_clean to REJECT,
+    aborting the build rather than shipping active content.
     """
     # 1. Remove <?plantuml ...?> processing instructions
     content = re.sub(r"<\?plantuml[\s\S]*?\?>", "", content)
@@ -161,6 +174,28 @@ def clean_svg(content: str) -> str:
     return content.strip()
 
 
+# (xlink:)href value extractor + dangerous-scheme matcher for verify_clean. The
+# scheme is tested against a NORMALIZED value (HTML entities decoded, tab/newline
+# stripped, leading control/space removed) — the same normalization a browser
+# applies before resolving a URL — so `jav&#x61;script:` and `java\tscript:`
+# cannot smuggle a live scheme past a raw-substring scan. Matched anchored at the
+# value start, so a benign `?next=javascript` query value never trips it.
+# data:text/html is rejected (renders attacker HTML); data:image/... stays allowed.
+_HREF_VALUE_RE = re.compile(r'(?:xlink:)?href\s*=\s*(["\'])(.*?)\1',
+                            re.IGNORECASE | re.DOTALL)
+_DANGEROUS_HREF_RE = re.compile(r"(?:javascript|vbscript):|data:text/html", re.IGNORECASE)
+
+
+def _normalized_href_values(content: str):
+    """Yield each (xlink:)href value the way a browser normalizes a URL scheme:
+    HTML entities decoded, ASCII tab/newline removed, leading control/space stripped."""
+    for m in _HREF_VALUE_RE.finditer(content):
+        val = html_mod.unescape(m.group(2))
+        val = re.sub(r"[\t\n\r]", "", val)       # URL parser drops these anywhere
+        val = re.sub(r"^[\x00-\x20]+", "", val)  # leading C0-control/space stripped
+        yield val
+
+
 def verify_clean(name: str, content: str) -> None:
     """Verify title-related AND active content has been removed. Abort if not."""
     checks = [
@@ -170,15 +205,22 @@ def verify_clean(name: str, content: str) -> None:
         (r"<script\b", "script element (<script>)"),
         (r"<foreignObject\b", "foreignObject element"),
         # Anchor to a start tag (`<` then no intervening `>`), mirroring where a
-        # handler can execute. Unanchored this fired on benign <text> prose like
-        # "online=true"; anchored it still catches quoted AND unquoted handlers.
-        (r"<[^>]*\son[a-zA-Z]+\s*=", "inline event handler (on*=)"),
-        (r"(?:xlink:)?href\s*=\s*[\"']\s*(?:javascript|vbscript):",
-         "active-scheme href (javascript:/vbscript:)"),
+        # handler can execute. `[\s/]` — not just `\s` — because HTML also accepts
+        # `/` as an attribute separator, so `<svg/onload=...>` runs on parse and a
+        # whitespace-only guard let it through. Anchoring still ignores benign
+        # <text> prose like "online=true"; still catches quoted AND unquoted.
+        (r"<[^>]*[\s/]on[a-zA-Z]+\s*=", "inline event handler (on*=)"),
     ]
     for pattern, desc in checks:
         if re.search(pattern, content, re.IGNORECASE):
             print(f"  FAIL: {name} still contains {desc} after cleaning!", file=sys.stderr)
+            sys.exit(1)
+    # Dangerous-scheme href check on the NORMALIZED value, so entity/whitespace
+    # obfuscation cannot slip a live javascript:/vbscript:/data:text/html past.
+    for val in _normalized_href_values(content):
+        if _DANGEROUS_HREF_RE.match(val):
+            print(f"  FAIL: {name} still contains active-scheme href "
+                  f"({val[:40]!r}) after cleaning!", file=sys.stderr)
             sys.exit(1)
     print(f"  VERIFIED: {name}")
 
