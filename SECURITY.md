@@ -25,7 +25,7 @@ Only the latest release is actively maintained. Security fixes are not backporte
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
-Please report vulnerabilities via [GitHub Security Advisories](https://github.com/karstenskyt/mad-scientist-skills/security/advisories/new). This keeps the report private until a fix is available.
+Please report vulnerabilities via [GitHub Security Advisories](https://github.com/karsten-s-nielsen/mad-scientist-skills/security/advisories/new). This keeps the report private until a fix is available.
 
 Include in your report:
 

@@ -109,7 +109,7 @@ workspace "System Name" "Deployment diagram" {
     }
 
     views {
-        deployment system "Production" "Deployment-Production" "Production Deployment" {
+        deployment system "Production" "Deployment_Production" {
             include *
             autoLayout
         }

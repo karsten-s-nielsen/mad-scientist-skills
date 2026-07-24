@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.0] - 2026-07-23
+
+### Added
+
+- **`c4`** — Interactive click-through drill-down between diagram levels, a breadcrumb trail, and two-level grouped tabs (with sub-tabs) in the assembled `architecture.html`, replacing the flat single-row tab bar. Container boxes whose components are decomposed carry a persistent affordance and link to their Component view.
+- **`c4`** — `--inject-wrap-width` / `--wrap-width` CLI flags to control PlantUML label wrap width in the rendered diagrams.
+
+### Fixed
+
+- **`c4`** — Hardened SVG cleaning to strip active content (`<script>`, `<foreignObject>`, `on*=` event handlers, and `javascript:`/`vbscript:` hrefs) with a fail-closed `verify_clean` gate. The handler match is tag-anchored so benign label text (e.g. `online=true`) is never mangled or falsely aborted, while `data:image/…` icons and `#fragment` links are preserved. The gate is anchored on `[\s/]` so a slash-separated handler (`<svg/onload=…>`, which browsers execute on parse) fails closed, and dangerous-scheme hrefs are matched against a browser-normalized value (HTML entities decoded, tab/newline stripped) so `jav&#x61;script:` / `java⇥script:` obfuscation and `data:text/html` cannot slip past — with the scope documented in `clean_svg`: best-effort hardening of inert PlantUML output, not a general-purpose untrusted-SVG sanitizer.
+- **`c4`** — Correctness guards in the HTML assembler: a stable fallback tab id for degenerate/empty view-key slugs, reserved-`dsl`-tab-id shadow detection (`find_reserved_id_shadow`), keyless component-view handling, orphaned-component-container lint, and tab-id collision warnings.
+- **`c4`** — Escaping fixes for view keys and group names flowing into `id=`/`data-tab=`/`onclick=` and embedded JSON so a hostile view key cannot break out of an attribute, JS-string, or `<script>` context.
+- **docs** — Corrected the repository slug (`karstenskyt` → `karsten-s-nielsen`) in the README CI badge and the `SECURITY.md` security-advisory link, which pointed at a non-existent repository.
+
 ## [1.19.0] - 2026-04-21
 
 ### Added
@@ -238,7 +252,11 @@ The new anti-patterns provide grep-based early detection of this class of bug. F
 ### Fixed
 - Trailing newline in `architecture.html`
 
-[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.16.0...HEAD
+[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.20.0...HEAD
+[1.20.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.19.0...v1.20.0
+[1.19.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.18.0...v1.19.0
+[1.18.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.17.0...v1.18.0
+[1.17.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.13.0...v1.14.0
