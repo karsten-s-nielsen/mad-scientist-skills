@@ -3,7 +3,7 @@
 ![Mad Scientist Skills](assets/mad-scientist.jpg)
 
 [![CI](https://github.com/karsten-s-nielsen/mad-scientist-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/karsten-s-nielsen/mad-scientist-skills/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.20.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.21.0-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills are slash-command capabilities that extend Claude Code with specialized knowledge. Install this plugin to get 9 skills for architecture auditing, architecture diagramming, code security analysis, performance optimization, pre-change measurement gating, observability assessment, documentation evaluation, cognitive interface review, and pre-commit quality checks.
@@ -430,6 +430,7 @@ Two-mode, two-tier security analysis: **planning** (before code) and **audit** (
 | 3 | Infrastructure security (incl. confidential computing) | | x |
 | 4 | OWASP Top 10 code scanning | | x |
 | 4b | ML/AI model security (serialization, provenance, poisoning) | | x |
+| 4c | HTML/SVG sanitizer bypass (regex denylists, XSS) | | x |
 | 5 | Web security headers | | x |
 | 6 | API boundary security | | x |
 | 7 | Authentication & session management | x | x |

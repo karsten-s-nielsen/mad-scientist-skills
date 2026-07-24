@@ -73,7 +73,7 @@ from pathlib import Path
 
 # --- Readability & navigation constants (see SKILL.md "Readability & Navigation") ---
 MAX_BOX_DESCR_CHARS = 200   # authoring cap (chars) — enforced by SKILL.md rule, not code
-BOX_WRAP_WIDTH_PX = 150     # render wrap (px) — injected into intermediate .puml
+BOX_WRAP_WIDTH_PX = 200     # render wrap (px) — injected into intermediate .puml (C4 stock width)
 MAX_ELEMENTS_PER_VIEW = 15  # subdivision guideline (SKILL.md) — not tool-enforced
 
 # (filename, raw Structurizr view key, tab label). tab_id is derived via

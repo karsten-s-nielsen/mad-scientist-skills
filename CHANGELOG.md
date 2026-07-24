@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.21.0] - 2026-07-23
+
+### Added
+
+- **`security-audit`** — New **Phase 4c: Unsafe HTML/SVG Sanitization — Regex Sanitizer Bypasses** (OWASP A03; CWE-79 / CWE-83 / CWE-116 / CWE-184). Audits hand-rolled regex "cleaners" that strip active content from HTML/SVG before embedding it (`innerHTML`, `dangerouslySetInnerHTML`, inline SVG, a generated `.html` artifact). Ships grep patterns to locate such sanitizers plus a seven-row payload matrix to test each one against: slash-separated handlers (`<svg/onload=…>`, which fires on parse with no interaction), unquoted/mixed-quote handlers, entity/control-char-obfuscated schemes (`jav&#x61;script:`, `java\tscript:`), non-`javascript:` schemes (`data:text/html`, `vbscript:`, scriptable `data:image/svg+xml`), non-recursive re-forming (`<scr<script>ipt>`), case/namespace variants, and mutation XSS. Remediation prioritizes parser-based allowlist sanitizers (DOMPurify, `nh3`, `ammonia`, `bluemonday`) over regex, with a fail-closed + browser-normalized gate as the stdlib-only fallback, honest "hardening vs sanitizing" scoping, and a CSP defense-in-depth note. Grounded in the v1.20.0 `c4` SVG-cleaner hardening (Finding 1).
+- **`security-audit`** — New **Important rule** — *"Regex is not a sanitizer"*: any hand-rolled regex that cleans/strips/scrubs HTML or SVG is a denylist and will leak; prefer a parser-based allowlist sanitizer, and if a stdlib-only cleaner is unavoidable, make it fail-closed and normalize input (decode entities, strip control chars, treat `/` as an attribute separator) before matching.
+
+### Changed
+
+- **`c4`** — `BOX_WRAP_WIDTH_PX` default raised **150 → 200** px (C4-PlantUML's stock wrap). Rendered container/component boxes are now more square — wider, with less vertical stacking — instead of narrow and tall. Override per render with `--wrap-width N`; lower it for narrower boxes. Regenerated the repo's `architecture.html` at the new width.
+
 ## [1.20.0] - 2026-07-23
 
 ### Added
@@ -252,7 +263,8 @@ The new anti-patterns provide grep-based early detection of this class of bug. F
 ### Fixed
 - Trailing newline in `architecture.html`
 
-[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.20.0...HEAD
+[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.21.0...HEAD
+[1.21.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.20.0...v1.21.0
 [1.20.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.19.0...v1.20.0
 [1.19.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.18.0...v1.19.0
 [1.18.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.17.0...v1.18.0
