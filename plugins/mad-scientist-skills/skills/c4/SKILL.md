@@ -377,13 +377,14 @@ the views together.
 | Constant | Unit | Governs | Default |
 |---|---|---|---|
 | `MAX_BOX_DESCR_CHARS` | characters | Authoring cap on each element description — keeps text human-readable | `200` |
-| `BOX_WRAP_WIDTH_PX` | pixels | Render wrap — forces multi-line text so a box stays narrow | `150` |
+| `BOX_WRAP_WIDTH_PX` | pixels | Render wrap — pixel width at which box text wraps to the next line | `200` |
 | `MAX_ELEMENTS_PER_VIEW` | elements | Subdivision guideline — split a view when it exceeds this | `15` |
 
 **Character cap vs pixel wrap are different levers.** The character cap
 (`MAX_BOX_DESCR_CHARS`) stops a box from holding an essay; the pixel wrap
 (`BOX_WRAP_WIDTH_PX`) stops even a capped 200-char line from rendering as one
-ultra-wide row. C4's stock wrap is 200px; `150` yields modestly narrower boxes.
+ultra-wide row. `200` matches C4's stock wrap for fairly square boxes; lower it
+(e.g. `150`) for narrower, taller boxes.
 
 - **Authoring rule:** cap each element `description` at `MAX_BOX_DESCR_CHARS` (200)
   characters. A box cannot shrink below its widest unbreakable token (a long word,
@@ -524,8 +525,9 @@ C4 sub-include re-emits the stock `wrapWidth 200`, so an earlier placement (or t
 python "$SKILL_DIR/c4_assemble.py" . --inject-wrap-width <temp-dir>
 ```
 
-This rewrites every `<temp-dir>/*.puml` in place (default 150px; override with
-`--wrap-width N`). Skip only if you deliberately want C4's default 200px boxes.
+This rewrites every `<temp-dir>/*.puml` in place (default 200px, matching C4's
+stock wrap; override with `--wrap-width N`). Lower `--wrap-width` for narrower,
+taller boxes.
 
 #### 3d. Render PlantUML to SVG
 
