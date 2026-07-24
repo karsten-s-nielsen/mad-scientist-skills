@@ -279,6 +279,8 @@ Use these patterns to find common vulnerabilities per language:
 
 For each finding, record the file path, line number, OWASP category, CWE, severity, and recommended fix.
 
+Hand-rolled **regex-based HTML/SVG sanitizers** are a common A03 blind spot that these generic patterns do not fully cover — audit them in **Phase 4c**.
+
 **Output:** Code security findings table with CWE references and remediation steps.
 
 ---
@@ -333,6 +335,49 @@ Skip this phase if the project has no ML components (no model training, no model
 | Model monitoring for drift/attack | Detect distribution shifts that may indicate data poisoning or adversarial manipulation | NannyML, Evidently AI, WhyLabs |
 
 **Output:** ML model security findings table with CWE references, affected model artifacts, and remediation.
+
+---
+
+### Phase 4c: Unsafe HTML/SVG Sanitization — Regex Sanitizer Bypasses (Audit mode)
+
+If the project sanitizes, "cleans", or "scrubs" HTML, SVG, or other markup with **regular expressions** and then embeds the result into a page (`innerHTML`, `dangerouslySetInnerHTML`, inline SVG, a generated `.html` artifact, a `|safe`/`Markup()` template escape hatch), audit the sanitizer directly. Regex is not a parser: a hand-rolled regex sanitizer is a **denylist** (CWE-184), and denylists leak. The browser's HTML/URL parser normalizes input — decoding entities, stripping control characters, treating `/` as an attribute separator, mutating malformed markup — *after* the regex has run, so a payload that is inert as a string becomes active in the DOM.
+
+Skip this phase if the project never sanitizes or embeds HTML/SVG/markup from any source (no `innerHTML`, no inline-SVG assembly, no hand-rolled clean/strip step).
+
+**Locate the hand-rolled sanitizers first** — matching is *expected* and is not itself a finding; it flags the code to scrutinize:
+
+| Language | Grep pattern | What it finds |
+|----------|--------------|---------------|
+| Python | `re\.sub\(.*<script\|re\.sub\(.*foreignObject\|re\.sub\(.*javascript:` | Regex stripping active markup |
+| Python | `def .*clean\|def .*saniti\|def .*scrub\|def .*strip\|def .*_svg` | Hand-rolled cleaner functions |
+| Python | `Markup\(\|render_template_string\(\|\.safe\b` | Escape hatch that trusts pre-"cleaned" markup |
+| JS/TS | `\.replace\(/<script\|\.replace\(/on\|\.replace\(/javascript:` | Regex stripping active markup |
+| JS/TS | `innerHTML\|dangerouslySetInnerHTML\|insertAdjacentHTML\|document\.write` | Sink — trace the value back to its sanitizer |
+
+**Bypass shapes to test the sanitizer against** — confirm it either neutralizes *or* fail-closed rejects **every** row:
+
+| # | Payload | Defeats | CWE |
+|---|---------|---------|-----|
+| 1 | `<svg/onload=alert(1)>` | Guards keyed on whitespace before `on…=` — HTML also accepts `/` as an attribute separator, and `<svg/onload>` fires on parse with no interaction | CWE-79, CWE-83 |
+| 2 | `<a onclick=alert(1)>` , `<a onclick='x">'>` | Regexes assuming a quoted value with a matching delimiter | CWE-83 |
+| 3 | `jav&#x61;script:…` , `java\tscript:…` (embedded tab), leading `\x01` | Raw-substring scheme match — the browser decodes entities and strips control/tab/newline chars before resolving the scheme | CWE-79, CWE-116 |
+| 4 | `data:text/html,…` , `vbscript:…` , scriptable `data:image/svg+xml` | Denylists that strip only `javascript:` | CWE-184 |
+| 5 | `<scr<script>ipt>` , `<img src=x onerror=…//>` | Single-pass, non-recursive strip — removing the inner match re-forms the outer tag | CWE-184 |
+| 6 | `<SCRIPT>` , `<ScRiPt>` , `<xlink:href>` vs `href` | Case-sensitive or namespace-blind matching | CWE-79 |
+| 7 | mXSS: `<noscript>`, `<template>`, `<style>`, malformed comments, `<math>`/`<svg>` foreign content | Mutation after the browser re-serializes `innerHTML` — invisible to a pre-parse regex | CWE-79 |
+
+**Remediation (priority order):**
+
+1. **Don't use regex as the boundary.** Use a parser-based allowlist sanitizer: **DOMPurify** (browser/JS, includes an SVG profile), **`nh3`** (Python — Ammonia binding; note `bleach` is end-of-life), **`ammonia`** (Rust), **`bluemonday`** (Go). For SVG specifically, prefer a dedicated pass (DOMPurify SVG profile, `svg-hush`) or rasterize (`resvg`) when interactivity is not needed.
+2. **If a hand-rolled cleaner is unavoidable** (e.g. a stdlib-only constraint), make it **fail-closed**: a post-clean verification gate that ABORTS on any residual active-content shape it cannot safely neutralize. The gate MUST normalize input the way a browser does — decode HTML entities, strip tab/newline and leading control chars, treat `/` as an attribute separator — *before* matching, or it inherits the cleaner's blind spots. Test the gate against every row above.
+3. **Scope the claim honestly.** Hardening trusted, inert generator output (e.g. your own PlantUML/Graphviz SVG) is not the same as sanitizing untrusted input. Do not advertise "sanitized" for a regex pass — that is false assurance others will build on (Hyrum's Law).
+4. **Defense-in-depth (Phase 5).** A strict CSP without `unsafe-inline` neutralizes injected inline handlers/scripts even if the sanitizer leaks. Note: a standalone offline `.html` artifact opened via `file://` gets no server CSP header — a `<meta>` CSP is the only backstop — so sanitizer correctness carries more weight there.
+
+**Severity guidance:** High–Critical when untrusted user or third-party content flows through the regex sanitizer into rendered markup (stored/reflected XSS). **Medium** when the input is currently trusted (generator output) but the code presents itself as a sanitizer, or is a shared boundary others may come to rely on — the risk is latent false assurance, not immediate exploitation.
+
+**Grounded example.** A stdlib-only SVG cleaner stripped `<script>`, `<foreignObject>`, `on*=` handlers, and `javascript:`/`vbscript:` hrefs with regex behind a fail-closed `verify_clean` gate — but both the strip and the gate required whitespace before `on…=` and matched schemes as raw substrings. `<svg/onload=…>` (row 1, fires on parse) and `jav&#x61;script:` / `java\tscript:` / `data:text/html` hrefs (rows 3–4) passed both the strip *and* the gate. The fix anchored the handler guard on `[\s/]`, matched schemes against a browser-normalized value (entities decoded, tab/newline stripped, `data:text/html` rejected), and rescoped the docstring to "hardening of trusted output, not a general-purpose sanitizer". Because the SVG came from the project's own inert renderer, it scored **Medium** (latent false assurance), not Critical.
+
+**Output:** Sanitizer findings table listing the specific bypass rows that leaked, CWE references, and remediation (replace with a parser-based sanitizer, or fail-closed + normalize).
 
 ---
 
@@ -840,3 +885,4 @@ Present concrete findings with fix status:
 - **Scope awareness.** Don't flag framework-managed security as a finding (e.g., CSRF protection in Django when middleware is enabled).
 - **Prioritize.** Fix Critical and High findings. Track Medium and Low in the backlog. Don't let perfect be the enemy of secure.
 - **Two-tier awareness.** Standard tier checks are always actionable — fix issues found. Enterprise tier items serve as a professional reference — document which are applicable and which are configured, but don't block releases on Enterprise items the team hasn't adopted yet.
+- **Regex is not a sanitizer.** Any hand-rolled regex that "cleans", "strips", or "scrubs" HTML or SVG is a denylist and will leak (see Phase 4c). Prefer a parser-based allowlist sanitizer; if a stdlib-only cleaner is unavoidable, make it fail-closed and normalize input (decode entities, strip control chars, treat `/` as an attribute separator) before matching.
