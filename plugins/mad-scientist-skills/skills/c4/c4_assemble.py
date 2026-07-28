@@ -16,7 +16,8 @@ Arguments:
     --views             View specifications as key:label:filename triples (default: auto-detect).
                         The key is the Structurizr view key and controls tab grouping via
                         parse_view_key, so it must match the exported key (e.g. SystemContext,
-                        Containers, Component_<containerId>) — not a lowercase-hyphen slug.
+                        Containers, Containers_<systemId>, Component_<containerId>) — not a
+                        lowercase-hyphen slug.
     --system-name       System name for the HTML title (default: extracted from DSL)
     --inject-wrap-width PUML_DIR
                         Pre-render mode: inject `skinparam wrapWidth` into every *.puml in
@@ -467,6 +468,12 @@ def dsl_alias_for(identifier: str, elements) -> str:
 
 GROUP_ORDER = ["Context", "Containers", "Components", "Dynamic", "Deployment", "DSL"]
 
+# Synthetic (non-diagram) groups that always sort last, after any unknown group.
+# Without this they sort by GROUP_ORDER position, which puts them AHEAD of the
+# unknown groups appended afterwards — so a single bespoke view key pushed the
+# DSL source panel into the middle of the tab row.
+TAIL_GROUPS = {"DSL"}
+
 # Synthetic panel holding the copyable Structurizr DSL source. Appended to the
 # view set inside build_html; its tab id 'dsl' is RESERVED, so the collision
 # check (run in main() over the rendered views) must include this entry or a
@@ -481,6 +488,12 @@ def parse_view_key(key: str) -> tuple:
     NOT a naive split('_') — SystemContext/Containers carry no separator.
     Tolerant of both '_' and '-' as the level/scope separator so pre-existing
     user workspaces still group correctly. Unknown keys become their own group.
+
+    The bare `Containers`/`Components` keys only cover a SINGLE-software-system
+    workspace. Structurizr view keys must be unique, so a workspace with N systems
+    needs N distinct container-view keys; without the `Containers`/`Container`
+    prefixes below they each fell through to their own top-level group, and the
+    tab row advertised architectural levels that do not exist.
     """
     if key == "SystemContext":
         return ("Context", "System Context")
@@ -490,7 +503,11 @@ def parse_view_key(key: str) -> tuple:
         return ("Components", "Components")
     if key == "DSL":
         return ("DSL", "Structurizr DSL")
+    # Order is free: 'Container_' and 'Containers_' are disjoint prefixes
+    # (position 9 is '_' vs 's'), so neither can shadow the other.
     for prefix, group in (("Component", "Components"),
+                          ("Containers", "Containers"),  # multi-system Level 2
+                          ("Container", "Containers"),   # singular, as in the DSL
                           ("Dynamic", "Dynamic"),
                           ("Deployment", "Deployment")):
         if key.startswith(prefix + "_") or key.startswith(prefix + "-"):
@@ -850,8 +867,9 @@ def build_html(views, svgs, dsl_escaped, system_name, dmap=None, view_labels=Non
     for (_, tab_id, _label, raw_key) in all_views:
         group, sub = parse_view_key(raw_key)
         groups.setdefault(group, []).append((tab_id, sub, raw_key))
-    ordered_groups = [g for g in GROUP_ORDER if g in groups] + \
-                     [g for g in groups if g not in GROUP_ORDER]
+    ordered_groups = [g for g in GROUP_ORDER if g in groups and g not in TAIL_GROUPS] + \
+                     [g for g in groups if g not in GROUP_ORDER] + \
+                     [g for g in GROUP_ORDER if g in groups and g in TAIL_GROUPS]
 
     first_group = ordered_groups[0]
     first_tab = groups[first_group][0][0]

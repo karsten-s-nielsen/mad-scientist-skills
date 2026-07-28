@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.21.1] - 2026-07-27
+
+### Fixed
+
+- **`c4`** — Multi-system workspaces can now group their Level-2 diagrams. `parse_view_key`'s prefix table recognised `Component_<id>`, `Dynamic_<id>` and `Deployment_<id>` but had no entry for container views, so the only container key it understood was the bare singular `Containers`. Because Structurizr view keys must be unique across a workspace, a model with N software systems needs N distinct container-view keys — and every one of them fell through to "unknown key becomes its own group". A 15-system workspace rendered **12 top-level tabs, 8 of them container views**, each advertising an architectural level that does not exist. Added `Containers_<systemId>` and the singular `Container_<systemId>` to the prefix table (both `_` and `-` separators); the same workspace now renders **5 canonical tabs** — Context, Containers (8 sub-tabs), Dynamic, Deployment, DSL. `Container_` and `Containers_` are disjoint prefixes, so no ordering logic is needed. A side effect of correct grouping: split container panels now also receive their `Context ›` breadcrumb, which an unrecognised key never got.
+- **`c4`** — The synthetic **DSL** source panel now sorts last unconditionally. Group ordering placed every `GROUP_ORDER` member ahead of every unrecognised group, and `DSL` is a `GROUP_ORDER` member — so a single bespoke view key was enough to push the DSL panel into the middle of the tab row (it rendered 4th of 12 in the workspace above). Introduced `TAIL_GROUPS` for synthetic, non-diagram panels, which sort after the unknown groups. Note that the first fix masks this one for well-formed workspaces; it is fixed on its own merits so the "synthetic panel is always last" invariant holds by construction rather than by accident of what else is in the model.
+
+### Changed
+
+- **`c4`** — Documented the `Containers_<systemId>` view-key convention as **required** for multi-system workspaces in the SKILL.md naming-convention block, and narrowed the former "multi-system workspaces are out of scope" note: grouping and breadcrumbs now work for them, while click-through drill-down remains single-system (a Component panel's `Containers` crumb resolves against the bare key, so it is omitted rather than dangled).
+
 ## [1.21.0] - 2026-07-23
 
 ### Added
@@ -263,7 +274,8 @@ The new anti-patterns provide grep-based early detection of this class of bug. F
 ### Fixed
 - Trailing newline in `architecture.html`
 
-[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.21.0...HEAD
+[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.21.1...HEAD
+[1.21.1]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.21.0...v1.21.1
 [1.21.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.20.0...v1.21.0
 [1.20.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.19.0...v1.20.0
 [1.19.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.18.0...v1.19.0
