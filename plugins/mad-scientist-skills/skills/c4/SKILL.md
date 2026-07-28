@@ -399,7 +399,8 @@ ultra-wide row. `200` matches C4's stock wrap for fairly square boxes; lower it
 
   ```
   SystemContext
-  Containers
+  Containers                     # single software system
+  Containers_<systemId>          # one per system when the workspace has several
   Component_<containerId>
   Dynamic_<flowId>
   Deployment_<envId>
@@ -409,13 +410,25 @@ ultra-wide row. `200` matches C4's stock wrap for fairly square boxes; lower it
   the key prefix and drills from a container box into its `Component_<id>` view.
   A small system may keep the combined `Components` key — it is still navigable.
 
+  **Multi-system workspaces must use the `Containers_<systemId>` form.** Structurizr
+  view keys are unique across the workspace, so N software systems need N distinct
+  container-view keys; the bare `Containers` key can only ever name one of them.
+  Any key the prefix table does not recognise becomes **its own top-level tab**, so
+  a bespoke name like `CIContainers` advertises an architectural level that does not
+  exist. Both separators (`Containers_CI`, `Containers-CI`) and the singular DSL
+  spelling (`Container_CI`) group correctly.
+
 - **Drill-down (single software system):** in the generated HTML, clicking a
   container box that has a deeper Component view switches to that view; each detail
   view shows a breadcrumb (`Context › Containers › api`) to navigate back up. Only
   boxes with a target are clickable. The drill axis is `SystemContext → Containers
-  → Component_<id>`; Deployment tabs are navigation leaves, and workspaces with
-  more than one software system are out of scope for drill-down (the singular
-  `Containers`/`SystemContext` keys would collide).
+  → Component_<id>`; Deployment tabs are navigation leaves.
+
+  A **multi-system** workspace groups and breadcrumbs correctly (each
+  `Containers_<systemId>` panel gets its `Context ›` crumb), but click-through
+  drill-down remains single-system: the `Containers` crumb on a Component panel
+  resolves against the bare key, which a multi-system workspace does not have, so
+  that one crumb is omitted rather than pointed at a missing panel.
 
 - **Coverage lint (automated, non-fatal):** the assembler flags any container
   that declares `component` children but has **no `component` view scoped to it**
@@ -665,14 +678,14 @@ The viewer is **generated** by `c4_assemble.py` (the `TEMPLATE` string plus `bui
 
 The old single row of flat pills was replaced by a two-level navigation that scales past ~6 views:
 
-- **Group row** (`.grp` buttons, `role="tab"`) — top-level C4 levels in a fixed order (`GROUP_ORDER`): Context, Containers, Components, Dynamic, Deployment, then a synthetic **DSL** group. Clicking a group calls `c4ShowGroup(g)`, which activates that group's first view.
+- **Group row** (`.grp` buttons, `role="tab"`) — top-level C4 levels in a fixed order (`GROUP_ORDER`): Context, Containers, Components, Dynamic, Deployment, then a synthetic **DSL** group. Clicking a group calls `c4ShowGroup(g)`, which activates that group's first view. Unrecognised keys sort after the canonical levels; `TAIL_GROUPS` (currently just `DSL`) then sorts *after those*, so the synthetic source panel is always the last tab rather than sliding mid-row whenever a bespoke key exists.
 - **Sub-tab row** (`.subrow` / `.subtab`) — shown only for a group with **more than one** view (e.g. several split `Component_<container>` views under **Components**). A single-view group renders an empty `.subrow` placeholder and no sub-tabs. Sub-tab labels prefer the container's DSL display name (via `build_view_labels`) over the raw key suffix.
 - **Breadcrumbs** (`.breadcrumb`) — a Component panel shows `Context › Containers › <current>`; a Container panel shows `Context › <current>`. Crumbs are emitted only for ancestor views that actually rendered (`build_breadcrumbs` gates on the existing view keys), so a crumb never points at a missing panel.
 - **Panels** (`.tab-content`, one per view + the DSL panel) — the active panel is shown; others are `display:none`. Each panel is focusable (`tabindex="-1"`) and focused on activation for keyboard users.
 
 ### View keys, tab ids, and grouping
 
-- `parse_view_key(raw_key)` maps a Structurizr view key to `(group, sub_label)` — e.g. `SystemContext → (Context, "System Context")`, `Component_api → (Components, "api")`. Unknown keys become their own group.
+- `parse_view_key(raw_key)` maps a Structurizr view key to `(group, sub_label)` — e.g. `SystemContext → (Context, "System Context")`, `Component_api → (Components, "api")`, `Containers_CI → (Containers, "CI")`. Both `_` and `-` work as the separator. Unknown keys become their own group, which is why a multi-system workspace must name its container views `Containers_<systemId>` (see "View-key naming convention").
 - `view_key_to_tab_id(raw_key)` is the **single source of truth** for the DOM id / `data-tab` / `c4ShowTab('…')` argument: lowercase, `_→-`, strip to `[a-z0-9-]`. It is emitted **unescaped** into attribute and JS-string contexts, so it must be a safe slug. A degenerate key with no alphanumerics falls back to a stable `view-<hash>` id (never an empty id).
 - The synthetic DSL panel reserves tab id `dsl` (see the `_DSL_VIEW` constant). Two guards warn instead of silently shadowing a panel: `find_tab_id_collisions` (run over the rendered views **plus** `_DSL_VIEW`) catches two *distinct* keys colliding on any id, and `find_reserved_id_shadow` catches a user view claiming a reserved id — including the exact `raw_key='DSL'` case that the collision check's per-id key-set would otherwise dedup away.
 

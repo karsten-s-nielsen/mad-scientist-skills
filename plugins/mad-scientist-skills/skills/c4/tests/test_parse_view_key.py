@@ -14,6 +14,29 @@ class ParseViewKeyTest(unittest.TestCase):
     def test_containers(self):
         self.assertEqual(c4_assemble.parse_view_key("Containers"), ("Containers", "Containers"))
 
+    def test_split_containers_underscore(self):
+        # Structurizr view keys are unique, so a workspace with >1 software system
+        # must give each container view a distinct key. They are all C4 Level 2 and
+        # must land in the one Containers group, not become 8 top-level groups.
+        self.assertEqual(c4_assemble.parse_view_key("Containers_api"), ("Containers", "api"))
+
+    def test_split_containers_hyphen(self):
+        self.assertEqual(c4_assemble.parse_view_key("Containers-api"), ("Containers", "api"))
+
+    def test_split_container_singular_underscore(self):
+        # The DSL keyword is `container` (singular), so authors reach for it too.
+        self.assertEqual(c4_assemble.parse_view_key("Container_api"), ("Containers", "api"))
+
+    def test_split_container_singular_hyphen(self):
+        self.assertEqual(c4_assemble.parse_view_key("Container-api"), ("Containers", "api"))
+
+    def test_container_and_containers_prefixes_are_disjoint(self):
+        # 'Containers_x' must not be parsed by the 'Container' entry (which would
+        # yield the sub-label 's_x'). Position 9 is '_' vs 's', so the prefixes
+        # never overlap and the tuple order is free — this pins that.
+        self.assertEqual(c4_assemble.parse_view_key("Containers_Taipy"), ("Containers", "Taipy"))
+        self.assertEqual(c4_assemble.parse_view_key("Container_Taipy"), ("Containers", "Taipy"))
+
     def test_combined_components(self):
         self.assertEqual(c4_assemble.parse_view_key("Components"), ("Components", "Components"))
 

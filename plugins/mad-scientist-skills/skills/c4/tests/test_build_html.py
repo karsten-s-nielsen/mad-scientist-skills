@@ -451,5 +451,66 @@ class TabIdCollisionConsequenceTest(unittest.TestCase):
         self.assertEqual(html.count('id="component-api"'), 2)
 
 
+class GroupOrderingTest(unittest.TestCase):
+    """The group row must advertise canonical C4 levels only, with the synthetic
+    DSL panel last. A workspace with >1 software system needs a distinct key per
+    container view (Structurizr keys are unique), so those keys must still group."""
+
+    def _group_row(self, html):
+        return re.findall(r'<button class="grp[^"]*"[^>]*data-group="([^"]*)"', html)
+
+    def _multi_system_views(self):
+        # Two software systems -> two Level-2 container views (handoff repro).
+        keys = ["SystemContext", "Containers_A", "Containers_B"]
+        return [("%s.svg" % k, c4_assemble.view_key_to_tab_id(k), k, k) for k in keys]
+
+    def test_multi_system_container_views_form_one_group(self):
+        views = self._multi_system_views()
+        svgs = {t: "<svg/>" for (_, t, _, _) in views}
+        html = c4_assemble.build_html(views, svgs, "dsl", "Sys")
+        self.assertEqual(self._group_row(html), ["Context", "Containers", "DSL"])
+
+    def test_multi_system_container_views_become_subtabs(self):
+        views = self._multi_system_views()
+        svgs = {t: "<svg/>" for (_, t, _, _) in views}
+        html = c4_assemble.build_html(views, svgs, "dsl", "Sys")
+        sub = html.split('data-subrow="Containers"', 1)[1].split("</div>", 1)[0]
+        self.assertIn("c4ShowTab('containers-a')", sub)
+        self.assertIn("c4ShowTab('containers-b')", sub)
+
+    def test_split_container_panel_gets_context_breadcrumb(self):
+        # Grouping as Containers also makes build_breadcrumbs recognise the view
+        # as Level 2, so it gains the Context crumb an ungrouped key never got.
+        views = self._multi_system_views()
+        svgs = {t: "<svg/>" for (_, t, _, _) in views}
+        html = c4_assemble.build_html(views, svgs, "dsl", "Sys")
+        panel = html.split('id="containers-a"', 1)[1].split("</nav>", 1)[0]
+        self.assertIn("c4ShowTab('systemcontext')", panel)
+
+    def test_dsl_group_sorts_last_despite_unknown_group(self):
+        # DSL is in GROUP_ORDER, so it sorted ahead of any unknown group and
+        # landed mid-row. The synthetic panel must always be last.
+        views = [
+            ("f1.svg", "systemcontext", "System Context", "SystemContext"),
+            ("f2.svg", "bespoke", "Bespoke", "Bespoke"),
+        ]
+        svgs = {"systemcontext": "<svg/>", "bespoke": "<svg/>"}
+        html = c4_assemble.build_html(views, svgs, "dsl", "Sys")
+        self.assertEqual(self._group_row(html)[-1], "DSL")
+
+    def test_known_group_order_unchanged(self):
+        # Regression guard: canonical levels keep their GROUP_ORDER sequence.
+        views = [
+            ("f1.svg", "systemcontext", "System Context", "SystemContext"),
+            ("f2.svg", "containers", "Containers", "Containers"),
+            ("f3.svg", "component-api", "api", "Component_api"),
+            ("f4.svg", "deployment-prod", "prod", "Deployment_prod"),
+        ]
+        svgs = {t: "<svg/>" for (_, t, _, _) in views}
+        html = c4_assemble.build_html(views, svgs, "dsl", "Sys")
+        self.assertEqual(self._group_row(html),
+                         ["Context", "Containers", "Components", "Deployment", "DSL"])
+
+
 if __name__ == "__main__":
     unittest.main()
