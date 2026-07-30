@@ -4,12 +4,16 @@ import sys
 import tempfile
 import unittest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 import c4_assemble  # noqa: E402
 
-SCRIPT = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "c4_assemble.py")
+# This module shells out to the script instead of only importing it, so it needs
+# the shipped path, which conftest.py's sys.path entry does not provide.
+# tests/skills/c4/ -> repo root is three levels up.
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__)))))
+
+SCRIPT = os.path.join(_REPO_ROOT, "plugins", "mad-scientist-skills",
+                      "skills", "c4", "c4_assemble.py")
 
 # Minimal SVGs — count_entities keys on `<g class="entity"`.
 SVG_ONE_ENTITY = ('<svg xmlns="http://www.w3.org/2000/svg">'

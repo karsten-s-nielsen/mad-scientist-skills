@@ -16,10 +16,27 @@ plugins/mad-scientist-skills/
 └── skills/
     └── <skill-name>/
         ├── SKILL.md        # Skill definition (YAML frontmatter + body)
-        └── templates/      # Optional output templates
+        ├── templates/      # Optional output templates
+        └── *.py            # Optional runtime scripts the skill invokes
 ```
 
 Each skill is self-contained in its own directory. The skill name must be lowercase and hyphenated (e.g., `security-audit`, `optimization-audit`).
+
+A skill directory ships **verbatim** to everyone who installs the plugin, so it should
+hold only what the skill needs at runtime. Tests therefore live in a top-level `tests/`
+tree that mirrors the skill path:
+
+```
+conftest.py                 # puts each skill dir on sys.path for its tests
+tests/
+└── skills/
+    └── <skill-name>/       # mirrors plugins/<plugin>/skills/<skill-name>/
+```
+
+Because the tests no longer sit beside the module they exercise, they cannot import it
+as a sibling — the root `conftest.py` handles that. Add a skill to its tuple when that
+skill ships an importable Python module. Run the suite from the repo root
+(`python -m pytest tests -q`); the `pytest` CI job gates it on every PR.
 
 ## Skill File Format
 
@@ -66,7 +83,7 @@ Significant architectural decisions — ones future contributors will reasonably
 - Introducing a new skill category (e.g., adding pre-change gates alongside retrospective audits — see `ADR-001`)
 - Establishing a naming convention that future skills will follow (e.g., the `<action>-before-<phase>` peer-skill pattern)
 - Changing an existing skill's trigger scope in a way that affects plugin identity
-- Adopting a cross-cutting policy (e.g., "all audit skills must have a Planning mode")
+- Adopting a cross-cutting policy (e.g., "all audit skills must have a Planning mode", or "tests live outside skill directories" — see `ADR-002`)
 - Retiring or deprecating a skill that users may already depend on
 
 **When NOT to write an ADR:**
@@ -91,6 +108,7 @@ This project follows [Conventional Commits](https://www.conventionalcommits.org/
 | `feat` | New skill or significant new capability |
 | `fix` | Correcting a false positive, broken phase, or wrong output |
 | `docs` | README, CONTRIBUTING, or inline documentation changes |
+| `refactor` | Restructuring with no change to runtime behaviour (e.g. moving tests out of the shipped payload) |
 
 The **scope** should be the skill name:
 
