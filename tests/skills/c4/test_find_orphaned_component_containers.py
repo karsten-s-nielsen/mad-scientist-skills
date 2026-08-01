@@ -2,7 +2,7 @@ import os
 import sys
 import unittest
 
-import c4_assemble  # noqa: E402
+import c4_assemble
 
 FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
 

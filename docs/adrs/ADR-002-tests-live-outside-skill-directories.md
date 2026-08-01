@@ -44,7 +44,7 @@ Tests live in a top-level `tests/` tree that mirrors the skill path (`tests/skil
 
 ### Negative
 
-- `conftest.py` is load-bearing. Running a test module directly by path from a different working directory no longer resolves the import; `python -m pytest tests -q` from the repo root is now the supported invocation, and the CI job uses exactly that.
+- `conftest.py` is load-bearing, and what it costs is narrower than it first appears. Any `python -m pytest` invocation still works from any working directory — pytest walks up to `rootdir` and loads the root `conftest.py`, so both `python -m pytest tests` and a single module by absolute path resolve the import from an unrelated cwd. What no longer works is running a test file as a bare script (`python tests/skills/c4/test_matcher.py`), which is exactly what the twelve deleted per-file `sys.path` inserts used to buy; that now raises `ModuleNotFoundError`. Since `rootdir` inference is what makes the conftest discoverable, a root `pytest.ini` pins it explicitly rather than leaving it dependent on how the suite is invoked.
 - Adding a skill with an importable Python module requires editing the `conftest.py` tuple. This is documented in `CONTRIBUTING.md`, but it is a step that did not exist before and will be forgotten at least once.
 - `test_cli_main.py` shells out to the assembler rather than only importing it, so it needs the shipped path and `conftest.py` cannot help. It resolves the repo root by walking up from `__file__`, which couples one test module to its own depth in the tree. Commented in place.
 - Tests are no longer adjacent to the code they exercise, which is the Python convention this repo previously followed. The reviewer's habit of "open the skill, see its tests" is broken; the mirrored path is the compensation.
@@ -53,7 +53,7 @@ Tests live in a top-level `tests/` tree that mirrors the skill path (`tests/skil
 
 - `.gitignore`'s `__pycache__/` rule already covers the new location; no ignore changes were needed.
 - The `.secrets.baseline` needed no update — detect-secrets keys its baseline entries by path, and its one entry is an unrelated template that this commit does not move.
-- No runtime file changed. `c4_assemble.py` is untouched, so plugin behaviour is byte-for-byte identical and no version bump is required on functional grounds.
+- No runtime file changed. `c4_assemble.py` is untouched, so plugin behaviour is byte-for-byte identical. This still ships as **v1.21.2** — a patch, since nothing was added to the shipped surface and it only got smaller — because the version is the install cache key: the cache lives at `~/.claude/plugins/cache/.../<version>/`, so an existing install keeps its copy of the tests until the version changes. Without a bump the payload reduction reaches nobody who already installed.
 - Git recorded all 15 files as renames, so the move reads as content-preserving in history rather than as a delete-and-re-add.
 
 ## Project Guideline Amendment
@@ -66,6 +66,7 @@ Tests live in a top-level `tests/` tree that mirrors the skill path (`tests/skil
   - `plugins/mad-scientist-skills/skills/c4/c4_assemble.py` — the plugin's only runtime Python module, and so the only skill this affects today
 - **Repo files:**
   - `conftest.py` — new; makes each skill directory importable for its tests
+  - `pytest.ini` — new; pins `rootdir` at the repo root so the conftest is found regardless of invocation
   - `tests/skills/c4/` — the relocated suite, 15 files
   - `.github/workflows/ci.yml` — new `pytest` job
   - `CONTRIBUTING.md` — "Repository Structure" amended per the section above

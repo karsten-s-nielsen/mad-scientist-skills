@@ -4,7 +4,7 @@ import sys
 import tempfile
 import unittest
 
-import c4_assemble  # noqa: E402
+import c4_assemble
 
 # This module shells out to the script instead of only importing it, so it needs
 # the shipped path, which conftest.py's sys.path entry does not provide.

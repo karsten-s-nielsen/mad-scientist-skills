@@ -2,7 +2,7 @@ import os
 import sys
 import unittest
 
-import c4_assemble  # noqa: E402
+import c4_assemble
 
 # Minimal shapes mirroring the real exporter output (verified 2026-07-22):
 # the LAST C4 include differs per view type.

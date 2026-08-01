@@ -2,7 +2,7 @@ import os
 import sys
 import unittest
 
-import c4_assemble  # noqa: E402
+import c4_assemble
 
 
 class CleanSvgTest(unittest.TestCase):

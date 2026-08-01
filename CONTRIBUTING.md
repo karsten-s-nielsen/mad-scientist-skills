@@ -28,6 +28,7 @@ tree that mirrors the skill path:
 
 ```
 conftest.py                 # puts each skill dir on sys.path for its tests
+pytest.ini                  # pins rootdir so that conftest is always found
 tests/
 └── skills/
     └── <skill-name>/       # mirrors plugins/<plugin>/skills/<skill-name>/
@@ -35,8 +36,13 @@ tests/
 
 Because the tests no longer sit beside the module they exercise, they cannot import it
 as a sibling — the root `conftest.py` handles that. Add a skill to its tuple when that
-skill ships an importable Python module. Run the suite from the repo root
-(`python -m pytest tests -q`); the `pytest` CI job gates it on every PR.
+skill ships an importable Python module.
+
+Run the suite with `python -m pytest tests -q`; the `pytest` CI job gates it on every
+PR. Any `python -m pytest` invocation works from any directory, because `pytest.ini`
+anchors `rootdir` at the repo root and pytest loads the conftest from there. Running a
+test file as a bare script (`python tests/skills/c4/test_matcher.py`) does **not** work
+— that path never reaches the conftest, so the import fails.
 
 ## Skill File Format
 

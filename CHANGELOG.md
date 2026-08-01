@@ -7,13 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.21.2] - 2026-08-01
+
 ### Changed
 
-- **repo** — Skill tests moved out of the shipped payload. A skill directory is copied **verbatim** on install — the install cache holds only `.claude-plugin/` and `skills/`, never repo-root files — so `c4`'s 15-file test suite at `skills/c4/tests/` was downloaded by every installer despite being developer infrastructure. Tests now live in a top-level `tests/` tree mirroring the skill path (`tests/skills/c4/`), which costs installers nothing. The `c4` skill's payload drops **239K / 22 files → 134K / 7 files** (44% of its bytes, two thirds of its files); the whole plugin **1236K / 63 files → 1131K / 48 files**. A root `conftest.py` puts each skill directory that ships an importable module on `sys.path`, replacing 12 duplicated per-file inserts. No runtime file changed — `c4_assemble.py` is untouched and plugin behaviour is byte-for-byte identical. See `ADR-002`.
+- **repo** — Skill tests moved out of the shipped payload. A skill directory is copied **verbatim** on install — the install cache holds only `.claude-plugin/` and `skills/`, never repo-root files — so `c4`'s 15-file test suite at `skills/c4/tests/` was downloaded by every installer despite being developer infrastructure. Tests now live in a top-level `tests/` tree mirroring the skill path (`tests/skills/c4/`), which costs installers nothing. The `c4` skill's payload drops **239K / 22 files → 134K / 7 files** (44% of its bytes, two thirds of its files); the whole plugin **1236K / 63 files → 1131K / 48 files**. A root `conftest.py` puts each skill directory that ships an importable module on `sys.path`, replacing 12 duplicated per-file inserts. No runtime file changed — `c4_assemble.py` is untouched and plugin behaviour is byte-for-byte identical. Released as a patch even so, because the version is the install cache key (`~/.claude/plugins/cache/.../<version>/`): without a bump, an existing install keeps its copy of the tests and the payload reduction reaches nobody. See `ADR-002`.
 
 ### Added
 
 - **ci** — New `pytest` job runs `python -m pytest tests -q` on every PR and push to `main`. CI previously ran only `pre-commit` (file hygiene, secret scanning), so the 161 `c4` tests were ungated — including the v1.21.1 behaviour fixes to `c4_assemble.py`. Verified the gate can fail, not just pass: reverting the v1.21.1 `TAIL_GROUPS` fix turns the job red. The suites import only the stdlib, so the job installs `pytest` and needs no PlantUML, Graphviz, or JRE — it gates 159 of the 161 tests, the two real-render integration tests being `skipUnless`-gated on a toolchain the runner does not have.
+- **repo** — New root `pytest.ini` pins pytest's `rootdir` at the repo root. The root `conftest.py` is only loaded from `rootdir` down, and with no config file present `rootdir` is inferred from the invocation — so pinning it makes conftest discovery independent of how the suite is called rather than a property of the arguments it was given.
 
 ## [1.21.1] - 2026-07-27
 
@@ -282,7 +285,8 @@ The new anti-patterns provide grep-based early detection of this class of bug. F
 ### Fixed
 - Trailing newline in `architecture.html`
 
-[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.21.1...HEAD
+[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.21.2...HEAD
+[1.21.2]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.21.1...v1.21.2
 [1.21.1]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.21.0...v1.21.1
 [1.21.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.20.0...v1.21.0
 [1.20.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.19.0...v1.20.0
