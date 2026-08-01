@@ -2,9 +2,7 @@ import os
 import sys
 import unittest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-import c4_assemble  # noqa: E402
+import c4_assemble
 
 # Real component-view QN (verified 2026-07-22): the container APIService appears
 # as an INTERIOR segment, so a bare-name / endswith match would false-fire.

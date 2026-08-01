@@ -19,3 +19,23 @@ jobs:
           python-version: "3.12"
 
       - uses: pre-commit/action@v3.0.1
+
+  # Skill tests live under tests/ rather than beside the skills they cover, so an
+  # install ships only runtime files. The root conftest.py puts each skill
+  # directory on sys.path; run from the repo root so pytest picks it up.
+  # The suites import only the stdlib, so pytest is the sole install. This gates
+  # 159 of the 161 tests: test_integration_render.py's two real-render tests are
+  # skipUnless-gated on Java + structurizr.war + plantuml.jar + Graphviz, none of
+  # which are provisioned here, so they skip rather than run.
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - run: pip install pytest
+
+      - run: python -m pytest tests -q

@@ -6,9 +6,7 @@ import sys
 import tempfile
 import unittest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-import c4_assemble  # noqa: E402
+import c4_assemble
 
 FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
 HOME = os.path.expanduser("~")

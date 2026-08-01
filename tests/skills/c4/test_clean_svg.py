@@ -2,10 +2,7 @@ import os
 import sys
 import unittest
 
-# c4_assemble.py sits one directory up from tests/.
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-import c4_assemble  # noqa: E402
+import c4_assemble
 
 
 class CleanSvgTest(unittest.TestCase):
