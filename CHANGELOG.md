@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.0] - 2026-08-11
+
+### Added
+
+- **`c4`** — Coverage lint extended one level up: `find_orphaned_container_systems` flags any **software system that declares containers but has no `container` view scoped to it**, so an entire subsystem can no longer be modeled and rendered nowhere. The existing lint only ever covered the level below (a container whose *components* never render), and the missing mirror is the more damaging of the two — a missing component view hides one container's internals, a missing container view hides a whole subsystem, and nothing else in the pipeline complains: the DSL is valid, the export succeeds, and the elements still appear in the DSL panel. Found in a real 15-system workspace where two systems held **10 containers between them that rendered in no diagram**, six of them for months. Prints `WARN: software system '<name>' (<id>) has N container(s) but no container <id> "Containers_<id>" view.` and stays non-fatal, matching the Level-3 lint. Coverage is judged **only** on a `container` view scoped to that system: `include <containerId>` inside another system's container view does not count, because a container view may only hold containers of its own scope, so the exporter drops the foreign include and the element still renders nowhere.
+
+### Fixed
+
+- **`c4`** — `parse_dsl_model` no longer reads comments as source. `_tokenize_dsl` had no comment handling at all, which let a comment do two things it should not: a **commented-out view still counted as coverage** in both lints — the exact bypass someone reaches for when temporarily disabling a view — and an **unbalanced `{` inside a comment shifted brace depth**, re-parenting every element after it. Both were observed against a real workspace, where prose in a `#` comment (`"...had no container view, so..."`) also minted a phantom view declaration scoped to the identifier `view,`. `/* ... */` is now dropped anywhere outside a quoted string; `#` and `//` are dropped when they are the first non-whitespace on a line — line-start only, because mid-line `#` is a colour literal in Structurizr DSL (`background #08427B`) and stripping to end-of-line would eat it along with the styles block's braces.
+
+### Changed
+
+- **repo** — `.gitignore` now excludes `docs/superpowers/`, where the superpowers plugin writes its brainstorming plans and specs. That is session scratch rather than project documentation, and nothing under the path has ever been committed, so it only ever showed up as untracked noise in `git status`. Scoped to that one directory on purpose — `docs/plans/` and `docs/adrs/` are tracked project history.
+- **`c4`** — SKILL.md documents the coverage lint as a two-level table (Level 2 and Level 3) with the resolution for each, notes that Level 2 is the damaging case, and adds **"do not verify coverage by grepping the output"**: PlantUML splits label text across `<text>` nodes (`CVE Review` → `>CVE<` + `>Review<`), the assembled HTML embeds the DSL source panel so a name "found" in the page may be model text rather than a rendered element, and `.puml` files carry generated aliases rather than DSL identifiers — so an identifier grep returns nothing even for elements that did render. The element name in the `.puml` is the only reliable key; the structural lint is better still.
+
 ## [1.21.2] - 2026-08-01
 
 ### Changed
@@ -285,7 +300,8 @@ The new anti-patterns provide grep-based early detection of this class of bug. F
 ### Fixed
 - Trailing newline in `architecture.html`
 
-[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.21.2...HEAD
+[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.22.0...HEAD
+[1.22.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.21.2...v1.22.0
 [1.21.2]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.21.1...v1.21.2
 [1.21.1]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.21.0...v1.21.1
 [1.21.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.20.0...v1.21.0

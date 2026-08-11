@@ -117,6 +117,105 @@ class ParseDslModelTest(unittest.TestCase):
         comp = next(v for v in self.views if v.view_type == "component")
         self.assertEqual(comp.key, "Component_api")
 
+    def test_hash_commented_view_is_not_a_view(self):
+        # Observed in a real workspace: prose in a `#` comment inside the views
+        # block ("...had no container view, so...") minted a phantom ViewDecl.
+        # Commented-out views are the sharper case — they read as coverage.
+        dsl = '''workspace "C" {
+    model {
+        sys = softwareSystem "Sys" {
+            api = container "API" "d" "t" { c = component "C" "d" "t" }
+        }
+    }
+    views {
+        systemContext sys "SystemContext" { include * }
+        # TODO re-enable: component api "Component_api" {
+        #     include *
+        # }
+    }
+}'''
+        _elements, views = c4_assemble.parse_dsl_model(dsl)
+        self.assertEqual([v.view_type for v in views], ["systemContext"])
+
+    def test_slash_slash_commented_view_is_not_a_view(self):
+        dsl = '''workspace "C" {
+    model {
+        sys = softwareSystem "Sys" { api = container "API" "d" "t" }
+    }
+    views {
+        // container sys "Containers" { include * }
+        systemContext sys "SystemContext" { include * }
+    }
+}'''
+        _elements, views = c4_assemble.parse_dsl_model(dsl)
+        self.assertEqual([v.view_type for v in views], ["systemContext"])
+
+    def test_block_comment_is_not_source(self):
+        dsl = '''workspace "C" {
+    model {
+        sys = softwareSystem "Sys" { api = container "API" "d" "t" }
+    }
+    views {
+        /* container sys "Containers" {
+               include *
+           } */
+        systemContext sys "SystemContext" { include * }
+    }
+}'''
+        _elements, views = c4_assemble.parse_dsl_model(dsl)
+        self.assertEqual([v.view_type for v in views], ["systemContext"])
+
+    def test_unbalanced_brace_in_comment_does_not_reparent(self):
+        # A commented-out opening brace used to shift depth for the whole rest of
+        # the file: `sys` became a child of the commented-out element.
+        dsl = '''workspace "C" {
+    model {
+        # a retired container: foo = container "Foo" "d" "t" {
+        sys = softwareSystem "Sys" {
+            api = container "API" "d" "t"
+        }
+    }
+}'''
+        elements, _views = c4_assemble.parse_dsl_model(dsl)
+        by_id = {e.identifier: e for e in elements}
+        self.assertNotIn("foo", by_id, "commented-out element must not be parsed")
+        self.assertIsNone(by_id["sys"].parent)
+        self.assertEqual(by_id["api"].parent, "sys")
+
+    def test_hex_colour_literal_is_not_a_comment(self):
+        # Mid-line `#` is a colour in Structurizr DSL, not a comment marker.
+        # Stripping from `#` to end-of-line would eat the styles block's braces
+        # and unbalance every scope after it.
+        dsl = '''workspace "C" {
+    model {
+        sys = softwareSystem "Sys" {
+            api = container "API" "d" "t" { c = component "C" "d" "t" }
+        }
+    }
+    views {
+        container sys "Containers" { include * }
+        styles {
+            element "Container" {
+                background #438DD5
+                color #ffffff
+            }
+        }
+        component api "Component_api" { include * }
+    }
+}'''
+        elements, views = c4_assemble.parse_dsl_model(dsl)
+        by_id = {e.identifier: e for e in elements}
+        self.assertEqual(by_id["c"].parent, "api")
+        self.assertEqual({v.key for v in views}, {"Containers", "Component_api"})
+
+    def test_sample_fixture_parse_is_unchanged_by_comment_stripping(self):
+        # Regression guard on the shipped fixture: comment handling must not move
+        # anything in a workspace that has no comments.
+        # 1 person + 2 software systems + 3 containers + 3 components.
+        self.assertEqual(len(self.elements), 9)
+        self.assertEqual({v.key for v in self.views},
+                         {"SystemContext", "Containers", "Component_api"})
+
 
 if __name__ == "__main__":
     unittest.main()

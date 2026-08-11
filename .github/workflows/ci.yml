@@ -23,8 +23,8 @@ jobs:
   # Skill tests live under tests/ rather than beside the skills they cover, so an
   # install ships only runtime files. The root conftest.py puts each skill
   # directory on sys.path; run from the repo root so pytest picks it up.
-  # The suites import only the stdlib, so pytest is the sole install. This gates
-  # 159 of the 161 tests: test_integration_render.py's two real-render tests are
+  # The suites import only the stdlib, so pytest is the sole install. Two tests
+  # never run here: test_integration_render.py's real-render pair is
   # skipUnless-gated on Java + structurizr.war + plantuml.jar + Graphviz, none of
   # which are provisioned here, so they skip rather than run.
   pytest:

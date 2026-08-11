@@ -94,6 +94,43 @@ class MainParseFailureDegradationTest(unittest.TestCase):
             self.assertIn("<!DOCTYPE html>", page)
 
 
+class MainSystemCoverageLintTest(unittest.TestCase):
+    """The system-level coverage lint must reach stderr through main() and stay
+    non-fatal. The pure function is unit-tested elsewhere; this pins the wiring,
+    which is where a missing name in main() would hide it."""
+
+    _UNCOVERED = ('workspace "Sys" {\n  model {\n'
+                  '    s = softwareSystem "Sys" "d" {\n'
+                  '      api = container "API" "d" "t"\n'
+                  '      db = container "DB" "d" "t"\n    }\n  }\n'
+                  '  views {\n    systemContext s "SystemContext" { include * }\n  }\n}\n')
+    _COVERED = _UNCOVERED.replace(
+        '    systemContext s "SystemContext" { include * }\n',
+        '    systemContext s "SystemContext" { include * }\n'
+        '    container s "Containers_s" { include * }\n')
+
+    def _run_dsl(self, dsl):
+        with tempfile.TemporaryDirectory() as d:
+            out = os.path.join(d, "architecture.html")
+            r = _run(d, dsl, "structurizr-SystemContext.svg", SVG_ONE_ENTITY, out)
+            return r, os.path.exists(out)
+
+    def test_uncovered_system_warns_but_does_not_fail_the_build(self):
+        r, written = self._run_dsl(self._UNCOVERED)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertTrue(written, "the lint is non-fatal — HTML must still be written")
+        self.assertIn("software system 'Sys' (s) has 2 container(s)", r.stderr)
+        self.assertIn('container s "Containers_s"', r.stderr)
+
+    def test_covered_system_is_silent(self):
+        # Control: the same model WITH its container view must not warn, or the
+        # lint is just noise. Only SystemContext renders here, so this also pins
+        # that coverage is judged on the DSL, not on which views were rendered.
+        r, _written = self._run_dsl(self._COVERED)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertNotIn("software system", r.stderr)
+
+
 class ParseViewSpecTest(unittest.TestCase):
     """parse_view_spec('key:label:filename') -> 4-tuple; anything not exactly
     three colon-separated parts aborts (a colon in the label breaks it)."""

@@ -430,18 +430,47 @@ ultra-wide row. `200` matches C4's stock wrap for fairly square boxes; lower it
   resolves against the bare key, which a multi-system workspace does not have, so
   that one crumb is omitted rather than pointed at a missing panel.
 
-- **Coverage lint (automated, non-fatal):** the assembler flags any container
-  that declares `component` children but has **no `component` view scoped to it**
-  — its Level-3 decomposition was authored yet renders nowhere. This is the mirror
-  image of subdivision: subdivision splits an over-full view; the lint catches a
-  decomposition that was modeled and then forgotten. It prints
-  `WARN: container '<name>' (<id>) has N component(s) but no
-  component <id> "Component_<id>" view.` and does **not** fail the build (the model
-  stays internally consistent — the container is correctly left inert for
-  drill-down). Resolve it by either adding the missing view
-  (`component <id> "Component_<id>" { include * autoLayout }`) or, if the container
-  genuinely does not warrant a Level-3 view, deleting its `component` declarations
-  so the model does not carry invisible detail.
+- **Coverage lint (automated, non-fatal):** the assembler flags modeled detail
+  that renders in no diagram, at **both** levels. This is the mirror image of
+  subdivision: subdivision splits an over-full view; the lint catches a
+  decomposition that was modeled and then forgotten.
+
+  | Level | Flagged when | Warning |
+  |-------|--------------|---------|
+  | 2 | a `softwareSystem` declares `container` children but has **no `container` view scoped to it** | `WARN: software system '<name>' (<id>) has N container(s) but no container <id> "Containers_<id>" view.` |
+  | 3 | a `container` declares `component` children but has **no `component` view scoped to it** | `WARN: container '<name>' (<id>) has N component(s) but no component <id> "Component_<id>" view.` |
+
+  Neither fails the build (the model stays internally consistent — an uncovered
+  container is correctly left inert for drill-down). Resolve either by adding the
+  missing view (`container <id> "Containers_<id>" { include * autoLayout }`) or, if
+  that subtree genuinely does not warrant its own view, deleting the child
+  declarations so the model does not carry invisible detail.
+
+  **The Level-2 case is the damaging one** — a missing component view hides one
+  container's internals; a missing container view hides an entire subsystem. It is
+  also the easier one to miss, because nothing else in the pipeline complains: the
+  DSL is valid, the export succeeds, and the elements show up in the DSL panel.
+
+  Coverage means **a view scoped to that element and nothing else**. In particular
+  `include <containerId>` inside *another* system's container view does not count:
+  a container view may only hold containers of its own scope, so the exporter drops
+  the foreign include and the element still renders nowhere. The lint deliberately
+  keeps warning in that case.
+
+- **Do not verify coverage by grepping the output.** Searching `architecture.html`
+  or the `.puml` files for an element's name gives both false passes and false
+  failures:
+
+  - PlantUML splits label text across `<text>` nodes, so `CVE Review` appears as
+    `>CVE<` + `>Review<` and greps for the whole phrase find nothing.
+  - The assembled HTML embeds the **DSL source panel**, so a name "found" in the
+    page may only be the model text — the element itself may render nowhere.
+  - `.puml` files carry generated aliases (`Sys.APIService`), not DSL identifiers,
+    so an identifier grep returns nothing even for elements that did render.
+
+  The reliable key in a `.puml` is the element **name**. Better still, trust the
+  coverage lint above — it is a structural check against the DSL, immune to label
+  wrapping and to what happens to be quoted in a panel.
 
 ## Rendering workflow
 
