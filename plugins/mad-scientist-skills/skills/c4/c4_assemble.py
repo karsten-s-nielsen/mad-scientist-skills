@@ -306,13 +306,38 @@ _TRANSPARENT_SCOPES = ("group", "deploymentEnvironment", "deploymentNode")
 
 def _tokenize_dsl(dsl: str) -> list:
     """Tokens: quoted strings (one token, quotes kept), braces, and bare words.
-    String-skipping so braces inside quoted descriptions do not count as scope."""
+    String-skipping so braces inside quoted descriptions do not count as scope.
+
+    Comments are dropped: `/* ... */` anywhere outside a string, and `#` / `//`
+    when they are the first non-whitespace on a line. Without this a comment is
+    tokenized like source — a commented-out view still counts as coverage in the
+    lints below (the exact bypass someone reaches for when disabling a view), and
+    an unbalanced `{` inside a comment shifts brace depth so every element after
+    it is re-parented. Both were observed in a real workspace.
+
+    Line-start only for `#`/`//` because mid-line `#` is NOT a comment in
+    Structurizr DSL — `background #08427B` is a colour literal, and stripping
+    from `#` to end-of-line would eat it. Mid-line `//` is left alone for
+    symmetry; a trailing comment tokenizes to harmless bare words unless it
+    carries a brace or a view keyword.
+    """
     tokens = []
     i, n = 0, len(dsl)
+    at_line_start = True
     while i < n:
         c = dsl[i]
-        if c in " \t\r\n":
+        if c in " \t":
             i += 1
+        elif c in "\r\n":
+            at_line_start = True
+            i += 1
+        elif dsl.startswith("/*", i):
+            end = dsl.find("*/", i + 2)
+            i = n if end == -1 else end + 2  # unterminated -> comment to EOF
+            at_line_start = False
+        elif at_line_start and (c == "#" or dsl.startswith("//", i)):
+            end = dsl.find("\n", i)
+            i = n if end == -1 else end  # leave the \n for the branch above
         elif c == '"':
             j = i + 1
             while j < n and dsl[j] != '"':
@@ -321,15 +346,18 @@ def _tokenize_dsl(dsl: str) -> list:
                 j += 1
             tokens.append(dsl[i:j + 1])  # include closing quote
             i = j + 1
+            at_line_start = False
         elif c in "{}":
             tokens.append(c)
             i += 1
+            at_line_start = False
         else:
             j = i
             while j < n and dsl[j] not in ' \t\r\n{}"':
                 j += 1
             tokens.append(dsl[i:j])
             i = j
+            at_line_start = False
     return tokens
 
 
@@ -605,6 +633,47 @@ def build_view_labels(elements, views) -> dict:
     return labels
 
 
+def _find_uncovered_parents(elements, views, child_kind, parent_kind,
+                            view_type) -> list:
+    """Shared engine for the two coverage lints: parents of `child_kind` elements
+    that NO `view_type` view is scoped to, so those children render nowhere.
+
+    The C4 levels differ only in which kinds they name, so the two public lints
+    below are this function with different nouns — keeping the logic in one place
+    means a fix to one level cannot silently skip the other.
+
+    Coverage is a view SCOPED TO THE PARENT, and nothing else. In particular an
+    `include <childId>` inside some other parent's view does NOT count: a view may
+    only hold children of its own scope, so the exporter drops a foreign include
+    and the element still renders nowhere.
+
+    Returns [(parent_identifier, parent_name, child_count), ...] sorted by
+    identifier (deterministic). Empty when every decomposed parent is covered.
+    """
+    by_id = {e.identifier: e for e in elements}
+    # parent identifier -> number of direct children of child_kind
+    child_counts = collections.Counter()
+    for e in elements:
+        if e.kind != child_kind or e.parent is None:
+            continue
+        parent = by_id.get(e.parent)
+        if parent is None or parent.kind != parent_kind:
+            continue  # defensive: only attribute children to a real parent
+        child_counts[e.parent] += 1
+
+    covered = {v.scope_identifier for v in views
+               if v.view_type == view_type and v.scope_identifier}
+
+    orphans = []
+    for pid, count in child_counts.items():
+        if pid in covered:
+            continue
+        el = by_id.get(pid)
+        orphans.append((pid, el.name if el is not None else pid, count))
+    orphans.sort(key=lambda t: t[0])
+    return orphans
+
+
 def find_orphaned_component_containers(elements, views) -> list:
     """Containers that declare `component` children but have NO `component` view
     scoped to them — so their Level-3 decomposition never renders anywhere.
@@ -615,29 +684,24 @@ def find_orphaned_component_containers(elements, views) -> list:
     [(container_identifier, container_name, component_count), ...] sorted by
     identifier (deterministic). Empty when every decomposed container is covered.
     """
-    by_id = {e.identifier: e for e in elements}
-    # container identifier -> number of direct component children
-    comp_children = collections.Counter()
-    for e in elements:
-        if e.kind != "component" or e.parent is None:
-            continue
-        parent = by_id.get(e.parent)
-        if parent is None or parent.kind != "container":
-            continue  # defensive: only attribute components to real containers
-        comp_children[e.parent] += 1
+    return _find_uncovered_parents(elements, views, child_kind="component",
+                                   parent_kind="container", view_type="component")
 
-    # containers that ARE the scope of some `component` view (combined or split)
-    covered = {v.scope_identifier for v in views
-               if v.view_type == "component" and v.scope_identifier}
 
-    orphans = []
-    for cid, count in comp_children.items():
-        if cid in covered:
-            continue
-        el = by_id.get(cid)
-        orphans.append((cid, el.name if el is not None else cid, count))
-    orphans.sort(key=lambda t: t[0])
-    return orphans
+def find_orphaned_container_systems(elements, views) -> list:
+    """Software systems that declare `container` children but have NO `container`
+    view scoped to them — so their whole Level-2 decomposition renders nowhere.
+
+    The mirror of find_orphaned_component_containers one level up, and the more
+    damaging of the two: a missing component view hides one container's internals,
+    a missing container view hides an entire subsystem. Observed in a real
+    workspace where two software systems held 10 containers between them and
+    appeared in no diagram, six of them for months. Returns
+    [(system_identifier, system_name, container_count), ...] sorted by identifier.
+    """
+    return _find_uncovered_parents(elements, views, child_kind="container",
+                                   parent_kind="softwareSystem",
+                                   view_type="container")
 
 
 def build_breadcrumbs(view_key: str, existing_keys) -> list:
@@ -1167,12 +1231,26 @@ def main() -> None:
         elements, view_decls = parse_dsl_model(dsl_source)
         dmap = build_drilldown_map(elements, view_decls, rendered_keys=rendered_keys)
         orphans = find_orphaned_component_containers(elements, view_decls)
+        system_orphans = find_orphaned_container_systems(elements, view_decls)
         view_labels = build_view_labels(elements, view_decls)
     except Exception as exc:  # parsing must never crash assembly — degrade to no drill-down
         print("  WARN: DSL model parse failed (%s); drill-down disabled" % exc, file=sys.stderr)
         dmap = {}
         orphans = []
+        system_orphans = []
         view_labels = {}
+
+    # Completeness lint (non-fatal): system decomposed but never surfaced. Printed
+    # before the container-level lint below — it is the same defect one level up,
+    # and the wider one (a whole subsystem, not one container's internals).
+    if system_orphans:
+        print("Coverage lint: %d software system(s) declare containers but have no "
+              "container view — their Level-2 decomposition never renders:"
+              % len(system_orphans), file=sys.stderr)
+        for sid, name, count in system_orphans:
+            print("  WARN: software system %r (%s) has %d container(s) but no "
+                  "`container %s \"Containers_%s\"` view."
+                  % (name, sid, count, sid, sid), file=sys.stderr)
 
     # Completeness lint (non-fatal): container decomposed but never surfaced.
     if orphans:
