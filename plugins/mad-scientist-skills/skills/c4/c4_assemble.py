@@ -73,9 +73,9 @@ import tempfile
 from pathlib import Path
 
 # --- Readability & navigation constants (see SKILL.md "Readability & Navigation") ---
-MAX_BOX_DESCR_CHARS = 200   # authoring cap (chars) — enforced by SKILL.md rule, not code
+MAX_BOX_DESCR_CHARS = 200   # authoring cap (chars) — warned by find_overlong_descriptions
 BOX_WRAP_WIDTH_PX = 200     # render wrap (px) — injected into intermediate .puml (C4 stock width)
-MAX_ELEMENTS_PER_VIEW = 15  # subdivision guideline (SKILL.md) — not tool-enforced
+MAX_ELEMENTS_PER_VIEW = 15  # subdivision guideline — warned at assemble time
 
 # (filename, raw Structurizr view key, tab label). tab_id is derived via
 # view_key_to_tab_id(raw_key); grouping/breadcrumbs key on raw_key.
@@ -115,6 +115,12 @@ _HANDLER_IN_TAG_RE = re.compile(r"""\s+on[a-zA-Z]+\s*=\s*(["'])[\s\S]*?\1""")
 def _strip_handlers_in_tag(m) -> str:
     """Drop quoted on*= handlers from a single matched start-tag span."""
     return _HANDLER_IN_TAG_RE.sub("", m.group(0))
+
+
+# `spacing` is the SVG initial value for lengthAdjust, so the attribute is a no-op
+# wherever PlantUML emits it (it emits it on EVERY <text>). Value-anchored on
+# purpose: `spacingAndGlyphs` is a real, rendering-changing setting and must survive.
+_DEFAULT_LENGTHADJUST_RE = re.compile(r'\s+lengthAdjust="spacing"')
 
 
 def clean_svg(content: str) -> str:
@@ -172,6 +178,12 @@ def clean_svg(content: str) -> str:
     content = re.sub(r"<[^>]+>", _strip_handlers_in_tag, content)
     # 8. Neutralize javascript:/vbscript: in (xlink:)href — leave data:image/# intact.
     content = _ACTIVE_SCHEME_RE.sub(r'\1\2#\3', content)
+    # 9. Drop lengthAdjust="spacing" — "spacing" IS the SVG initial value, so the
+    #    attribute is pure redundancy on every one of PlantUML's per-word <text>
+    #    elements (~12% of a generated page). Matched on the VALUE, never blanket:
+    #    a non-default lengthAdjust="spacingAndGlyphs" would change rendering and
+    #    is deliberately left alone. See hoist_text_styles for the companion pass.
+    content = _DEFAULT_LENGTHADJUST_RE.sub("", content)
     return content.strip()
 
 
@@ -224,6 +236,188 @@ def verify_clean(name: str, content: str) -> None:
                   f"({val[:40]!r}) after cleaning!", file=sys.stderr)
             sys.exit(1)
     print(f"  VERIFIED: {name}")
+
+
+# --- <text> style hoisting (page-size reduction) -------------------------------
+# PlantUML justifies every WORD individually, emitting one <text> per word with the
+# full font stack repeated inline. On a real 11-view page that is ~5,200 <text>
+# elements re-declaring the same ~17 attribute combinations — roughly a quarter of
+# the file. Hoisting the CSS-inheritable half into generated classes is
+# render-identical (verified pixel-for-pixel) and cuts a 1.13 MB page to ~740 KB.
+#
+# Only genuinely CSS-inheritable presentation properties move. x/y/textLength stay
+# inline because they are per-element; lengthAdjust stays OUT of this set because it
+# is NOT a CSS property in SVG 1.1 (clean_svg drops it separately when it holds the
+# default value, which is the only case that arises).
+_TEXT_OPEN_RE = re.compile(r"<text\b([^>]*)>", re.IGNORECASE)
+_TEXT_ATTR_RE = re.compile(r'([a-zA-Z:\-]+)\s*=\s*"([^"]*)"')
+# Counts attribute POSITIONS regardless of how the value is quoted. Used only to
+# confirm _TEXT_ATTR_RE saw the whole start tag: it understands double quotes only,
+# so a single-quoted or unquoted attribute would be invisible to it and silently
+# dropped when the tag is rebuilt. PlantUML always double-quotes, but "rebuild a
+# tag from a partial parse" is the kind of failure that corrupts a diagram without
+# raising, so a mismatch means "leave this element alone".
+_ANY_ATTR_POS_RE = re.compile(r"[a-zA-Z:\-]+\s*=")
+
+_HOISTABLE_TEXT_ATTRS = ("fill", "font-family", "font-size", "font-style",
+                         "font-weight", "text-decoration", "letter-spacing",
+                         "word-spacing")
+# SVG presentation attributes are unitless user units; the CSS property needs a unit.
+_NEEDS_PX_UNIT = ("font-size", "letter-spacing", "word-spacing")
+
+
+def hoist_text_styles(svgs: dict) -> tuple:
+    """Replace repeated <text> presentation attributes with generated CSS classes.
+
+    Takes {tab_id: svg} and returns (rewritten_svgs, css_rules). Runs across ALL
+    SVGs at once rather than inside clean_svg, for two reasons that are not
+    optional:
+
+      1. Every SVG is embedded in ONE HTML document, so class names share a single
+         namespace. Numbering per-SVG would make `.c4t0` mean different things in
+         different panels and silently mis-style them.
+      2. One shared rule table is emitted once instead of being duplicated per view.
+
+    Class indices are assigned by descending frequency (ties broken on the tuple
+    itself), so the same model always yields the same class numbering — the output
+    stays diffable across regenerations.
+
+    <text> elements carrying none of the hoistable attributes are left untouched
+    and get no class, so they keep inheriting exactly what they inherited before.
+    """
+    counts = collections.Counter()
+    for svg in svgs.values():
+        for m in _TEXT_OPEN_RE.finditer(svg):
+            attrs = _TEXT_ATTR_RE.findall(m.group(1))
+            counts[tuple(sorted((k, v) for k, v in attrs
+                                if k in _HOISTABLE_TEXT_ATTRS))] += 1
+
+    # Deterministic: most-used first, ties resolved by the tuple's own ordering.
+    ranked = [t for t, _ in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])) if t]
+    index = {t: i for i, t in enumerate(ranked)}
+
+    rules = []
+    for t in ranked:
+        decls = []
+        for k, v in t:
+            if k in _NEEDS_PX_UNIT and re.fullmatch(r"[0-9.]+", v):
+                v += "px"
+            decls.append("%s:%s" % (k, v))
+        rules.append(".c4t%d{%s}" % (index[t], ";".join(decls)))
+
+    def rewrite(m):
+        span = m.group(1)
+        attrs = _TEXT_ATTR_RE.findall(span)
+        key = tuple(sorted((k, v) for k, v in attrs if k in _HOISTABLE_TEXT_ATTRS))
+        if key not in index:
+            return m.group(0)  # nothing hoistable — leave the element verbatim
+        # Rebuilding the tag is only safe when the whole tag was understood.
+        # A self-closing <text/> would lose its '/', and an attribute this parser
+        # cannot see would be dropped outright — so bail out instead.
+        if span.rstrip().endswith("/") or len(_ANY_ATTR_POS_RE.findall(span)) != len(attrs):
+            return m.group(0)
+        kept = ['%s="%s"' % (k, v) for k, v in attrs
+                if k not in _HOISTABLE_TEXT_ATTRS]
+        return '<text class="c4t%d"%s>' % (index[key],
+                                           (" " + " ".join(kept)) if kept else "")
+
+    out = {tab_id: _TEXT_OPEN_RE.sub(rewrite, svg) for tab_id, svg in svgs.items()}
+
+    # Structural invariant: this pass rewrites start tags, so the one thing it must
+    # never do is change tag boundaries. Angle-bracket counts are the cheapest
+    # complete check — any mangled tag moves them.
+    #
+    # verify_clean cannot be re-run here, which is why this check exists instead:
+    # wire_drilldown has already injected the onclick/onkeydown handlers that make
+    # the boxes clickable, and verify_clean rejects on*= handlers by design (it
+    # guards PlantUML's raw output, before wiring). Re-running it would abort every
+    # build that has drill-down.
+    #
+    # A violation means a diagram we no longer understand, so this degrades to the
+    # UN-hoisted SVGs rather than aborting: the page is then merely larger, which is
+    # the correct trade for a pass whose only purpose is size. All-or-nothing
+    # because the class table is shared across every SVG.
+    for tab_id, svg in svgs.items():
+        if (svg.count("<"), svg.count(">")) != (out[tab_id].count("<"),
+                                                out[tab_id].count(">")):
+            print("  WARN: text-style hoisting altered tag structure in %r; "
+                  "embedding the un-hoisted SVGs instead." % tab_id, file=sys.stderr)
+            return dict(svgs), ""
+
+    return out, "".join(rules)
+
+
+# --- final page verification ---------------------------------------------------
+# verify_clean guards each SVG as it comes off PlantUML, but two stages run AFTER
+# it: wire_drilldown injects handlers, and hoist_text_styles rewrites start tags.
+# verify_clean itself cannot be re-run on the result — it rejects on*= handlers by
+# design, and wiring adds them deliberately — so this sweep re-checks the embedded
+# SVGs in the exact form they ship, allowing precisely the handlers this pipeline
+# injects and nothing else.
+_SVG_BLOCK_RE = re.compile(r"<svg\b[\s\S]*?</svg\s*>", re.IGNORECASE)
+_TAG_RE = re.compile(r"<[^>]+>")
+_HANDLER_POS_IN_TAG_RE = re.compile(r"[\s/]on[a-zA-Z]+\s*=")
+_HANDLER_KV_IN_TAG_RE = re.compile(r'[\s/](on[a-zA-Z]+)\s*=\s*"([^"]*)"')
+
+# handler name -> the only value prefix wire_drilldown ever emits for it.
+_ALLOWED_SVG_HANDLERS = {
+    "onclick": "c4ShowTab(",
+    "onkeydown": "if(event.key===",
+}
+
+_FORBIDDEN_IN_EMBEDDED_SVG = [
+    (r"<\?plantuml", "processing instruction (<?plantuml)"),
+    (r"<title>", "title element (<title>)"),
+    (r'class="title"', 'title group (class="title")'),
+    (r"<script\b", "script element (<script>)"),
+    (r"<foreignObject\b", "foreignObject element"),
+]
+
+
+def _fail_page(msg: str) -> None:
+    print("  FAIL: %s" % msg, file=sys.stderr)
+    sys.exit(1)
+
+
+def verify_embedded_svgs(page: str) -> int:
+    """Re-verify every embedded SVG in the form it is actually embedded.
+
+    Returns the number of SVG blocks checked. Aborts the build on any violation.
+
+    Scoped to the `<svg>` regions rather than the whole page on purpose: the page's
+    own chrome legitimately contains a `<title>` in the head and an inline
+    `<script>` runtime, so a whole-page scan for those would be permanently red and
+    would teach the reader to ignore it. Everything the author supplies (DSL source,
+    system name, labels) is html-escaped before it reaches the page, so an
+    unescaped hit inside an SVG region can only have come from PlantUML's output or
+    from a bug in a later stage — which is exactly what this is watching for.
+    """
+    blocks = _SVG_BLOCK_RE.findall(page)
+    for i, svg in enumerate(blocks, 1):
+        where = "embedded SVG #%d" % i
+        for pattern, desc in _FORBIDDEN_IN_EMBEDDED_SVG:
+            if re.search(pattern, svg, re.IGNORECASE):
+                _fail_page("%s contains %s in the final page!" % (where, desc))
+        for val in _normalized_href_values(svg):
+            if _DANGEROUS_HREF_RE.match(val):
+                _fail_page("%s contains active-scheme href (%s) in the final page!"
+                           % (where, val[:40]))
+        for tag in _TAG_RE.findall(svg):
+            # Count handler POSITIONS, then the ones a quoted-value parser can
+            # read. A mismatch means an unquoted or otherwise unreadable handler,
+            # which is a violation in itself rather than something to skip.
+            positions = len(_HANDLER_POS_IN_TAG_RE.findall(tag))
+            pairs = _HANDLER_KV_IN_TAG_RE.findall(tag)
+            if positions != len(pairs):
+                _fail_page("%s has an unquoted/unparseable event handler: %s"
+                           % (where, tag[:120]))
+            for name, value in pairs:
+                expected = _ALLOWED_SVG_HANDLERS.get(name.lower())
+                if expected is None or not value.startswith(expected):
+                    _fail_page("%s has an unexpected event handler %s=%r — only "
+                               "the drill-down handlers this tool injects are "
+                               "allowed." % (where, name, value[:60]))
+    return len(blocks)
 
 
 def inject_wrap_width(puml: str, px: int) -> str:
@@ -295,7 +489,11 @@ def alias_matches_qn(qn: str, alias: str) -> bool:
     return qn.split(".")[-len(a):] == a
 
 
-Element = collections.namedtuple("Element", ["identifier", "name", "kind", "parent"])
+# `description` is appended LAST and defaulted so the four-positional construction
+# used everywhere else keeps working — the field is only read by the authoring lint.
+Element = collections.namedtuple(
+    "Element", ["identifier", "name", "kind", "parent", "description"],
+    defaults=(None,))
 ViewDecl = collections.namedtuple("ViewDecl", ["view_type", "scope_identifier", "key"])
 
 _ELEMENT_KINDS = ("softwareSystem", "container", "component", "person")
@@ -447,16 +645,23 @@ def parse_dsl_model(dsl: str):
         if tok in _ELEMENT_KINDS and in_views_depth is None:
             identifier = tokens[i - 2] if (i >= 2 and tokens[i - 1] == "=") else None
             name = None
+            description = None
             j = i + 1
+            # Structurizr positional args: `kind "Name" "Description" "Technology"`.
+            # The first quoted token is the name, the second the description; stop
+            # there so a technology string is never mistaken for one.
             while j < len(tokens) and tokens[j] not in "{}":
                 if tokens[j].startswith('"'):
-                    name = _unquote(tokens[j])
-                    break
+                    if name is None:
+                        name = _unquote(tokens[j])
+                    else:
+                        description = _unquote(tokens[j])
+                        break
                 j += 1
             parent = next((frame_scope[d] for d in range(depth, -1, -1)
                            if frame_scope[d] is not None), None)
             if identifier is not None and name is not None:
-                elements.append(Element(identifier, name, tok, parent))
+                elements.append(Element(identifier, name, tok, parent, description))
                 # If a `{` opens before the next `}`/sibling kind, it's this
                 # element's block -> nested elements see it as parent.
                 k = i + 1
@@ -674,6 +879,25 @@ def _find_uncovered_parents(elements, views, child_kind, parent_kind,
     return orphans
 
 
+def find_overlong_descriptions(elements, cap=MAX_BOX_DESCR_CHARS) -> list:
+    """Elements whose `description` exceeds the authoring cap, longest first.
+
+    The sibling of the view-density check: `MAX_BOX_DESCR_CHARS` was a documented
+    authoring rule that nothing measured, so descriptions drifted unnoticed — a
+    scan of 18 real workspaces found 14 over the cap, the worst at 664 characters
+    (3x). An overlong description does not fail the render; it inflates one box
+    until the diagram stops being readable, which is exactly the kind of gradual
+    decay no single change ever gets blamed for.
+
+    Returns [(identifier, name, length), ...] sorted longest-first (ties by
+    identifier) so the output is deterministic and the worst offender leads.
+    """
+    over = [(e.identifier, e.name, len(e.description))
+            for e in elements if e.description and len(e.description) > cap]
+    over.sort(key=lambda t: (-t[2], t[0]))
+    return over
+
+
 def find_orphaned_component_containers(elements, views) -> list:
     """Containers that declare `component` children but have NO `component` view
     scoped to them — so their Level-3 decomposition never renders anywhere.
@@ -828,13 +1052,21 @@ def wire_drilldown(svg: str, dmap: dict, labels=None):
     return out, wired[0]
 
 
-def detect_views(svg_dir: Path) -> list:
+def detect_views(svg_dir: Path, dsl_order=None) -> list:
     """Auto-detect views from SVG files present in the directory.
 
     First matches well-known Structurizr view names (SystemContext, Containers, etc.)
     in a stable order, then appends any remaining structurizr-*.svg files found in
-    the directory (sorted alphabetically). This handles both standard and
-    project-specific view names without hardcoding.
+    the directory. This handles both standard and project-specific view names
+    without hardcoding.
+
+    `dsl_order` is the sequence of view keys as they appear in the DSL's `views`
+    block. Any project-specific view is ordered by that sequence, so the tab row
+    follows the order the author wrote rather than the alphabet — with a dense
+    model split into per-provider slices, alphabetical ordering scrambles a
+    deliberate narrative. Filename order remains the tiebreaker for keys absent
+    from the DSL (and the whole fallback when `dsl_order` is None, e.g. a DSL that
+    failed to parse), so the result is deterministic either way.
 
     Returns list of (filename, tab_id, label, raw_key) tuples. tab_id is a pure
     function of raw_key via view_key_to_tab_id; label comes from parse_view_key
@@ -850,10 +1082,13 @@ def detect_views(svg_dir: Path) -> list:
             seen_filenames.add(filename)
 
     # 2. Append any remaining structurizr-*.svg files not already matched
-    for svg_file in sorted(svg_dir.glob("structurizr-*.svg")):
-        if svg_file.name in seen_filenames:
-            continue
-        raw_key = svg_file.stem.replace("structurizr-", "")
+    rank = {k: i for i, k in enumerate(dsl_order or [])}
+    remaining = [f for f in svg_dir.glob("structurizr-*.svg")
+                 if f.name not in seen_filenames]
+    remaining.sort(key=lambda f: (rank.get(f.stem.replace("structurizr-", "", 1),
+                                           len(rank)), f.name))
+    for svg_file in remaining:
+        raw_key = svg_file.stem.replace("structurizr-", "", 1)
         _group, label = parse_view_key(raw_key)
         found.append((svg_file.name, view_key_to_tab_id(raw_key), label, raw_key))
 
@@ -907,7 +1142,8 @@ def _js_str_in_attr(s: str) -> str:
     return "".join(out)
 
 
-def build_html(views, svgs, dsl_escaped, system_name, dmap=None, view_labels=None):
+def build_html(views, svgs, dsl_escaped, system_name, dmap=None, view_labels=None,
+               text_css=""):
     """Two-level grouped tabs + breadcrumbs + drill-down JS. Names html-escaped.
 
     views: (filename, tab_id, label, raw_key) 4-tuples. svgs: {tab_id: cleaned_svg}.
@@ -918,7 +1154,10 @@ def build_html(views, svgs, dsl_escaped, system_name, dmap=None, view_labels=Non
     `view_labels` (raw view key -> display name, from build_view_labels) overrides
     the subtab and breadcrumb-current-page text so a Component view reads its
     container's DSL name ("Analytics & SAM") instead of the key suffix
-    ("analytics"); absent keys keep the parse_view_key suffix."""
+    ("analytics"); absent keys keep the parse_view_key suffix.
+    `text_css` (from hoist_text_styles) is the generated `.c4tN` rule table for the
+    embedded SVG <text> elements; it is appended to the page's own <style> block so
+    the whole page stays a single self-contained file."""
     view_labels = view_labels or {}
     all_views = list(views) + [_DSL_VIEW]
     raw_to_tabid = {}
@@ -1000,7 +1239,7 @@ def build_html(views, svgs, dsl_escaped, system_name, dmap=None, view_labels=Non
 
     return TEMPLATE % dict(
         sysname=sysname, grp_html=grp_html, subrows_html=subrows_html,
-        panels_html=panels_html,
+        panels_html=panels_html, text_css=text_css,
         tab_to_group_js=_json_for_script(tab_to_group),
         group_tabs_js=_json_for_script(group_tabs),
     )
@@ -1050,6 +1289,8 @@ TEMPLATE = """<!DOCTYPE html>
     .copy-btn:hover { background:#3a3a5a; color:#e0e0e0; }
     .copy-btn.copied { background:#2e7d32; color:#fff; border-color:#2e7d32; }
     @media (max-width:600px){ body{padding:16px;} h1{font-size:1.4rem;} .grp{padding:6px 14px; font-size:0.8rem;} }
+    /* Generated: hoisted <text> presentation attributes (see hoist_text_styles). */
+%(text_css)s
   </style>
 </head>
 <body>
@@ -1160,11 +1401,22 @@ def main() -> None:
         match = re.search(r'workspace\s+"([^"]+)"', dsl_source)
         system_name = match.group(1) if match else "System"
 
+    # Parse the DSL model ONCE, up front: the view order it yields decides tab
+    # order below, and the same parse feeds drill-down, the coverage lints and the
+    # labels further down. Parsing must never crash assembly, so a failure degrades
+    # to "no model" — alphabetical tab order, no drill-down — rather than aborting.
+    try:
+        elements, view_decls = parse_dsl_model(dsl_source)
+    except Exception as exc:
+        print("  WARN: DSL model parse failed (%s); drill-down disabled" % exc,
+              file=sys.stderr)
+        elements, view_decls = [], []
+
     # Determine views
     if args.views:
         views = [parse_view_spec(v) for v in args.views]
     else:
-        views = detect_views(svg_dir)
+        views = detect_views(svg_dir, dsl_order=[v.key for v in view_decls if v.key])
 
     if not views:
         print(f"No SVG files found in {svg_dir}", file=sys.stderr)
@@ -1194,6 +1446,15 @@ def main() -> None:
                   file=sys.stderr)
             sys.exit(1)
         print("  OK: %s has %d element node(s)" % (filename, n_entities))
+        # Advisory density check. The subdivision guideline has always lived in
+        # SKILL.md with nothing surfacing a breach, so a view could drift to 40+
+        # boxes unnoticed. Non-fatal by design: the guideline is a readability
+        # heuristic, and a legitimately flat system may exceed it.
+        if n_entities > MAX_ELEMENTS_PER_VIEW:
+            print("  WARN: %s has %d element nodes — the readability guideline is "
+                  "%d; consider splitting it (see SKILL.md 'Readability & "
+                  "Navigation')." % (filename, n_entities, MAX_ELEMENTS_PER_VIEW),
+                  file=sys.stderr)
         svgs[key] = cleaned
 
     # Filter views to only those with successfully-embedded SVGs (4-tuples now).
@@ -1227,18 +1488,35 @@ def main() -> None:
     # Only views that actually rendered a panel are eligible for wiring, so an
     # injected c4ShowTab target can never dangle (Finding: dangling drill ref).
     rendered_keys = {rk for (_f, _k, _lbl, rk) in views}
+    # elements/view_decls were parsed up front (see "Parse the DSL model ONCE").
+    # These four consumers stay inside their OWN guard: hoisting the parse earlier
+    # only needed the parse to move, and the original try covered all five calls.
+    # The case this catches is not a failed parse (that already degraded above) but
+    # a SUCCESSFUL parse yielding a well-formed-but-unusual model that then trips a
+    # consumer walking it. Losing drill-down is an acceptable degradation; losing
+    # the whole diagram is not.
     try:
-        elements, view_decls = parse_dsl_model(dsl_source)
         dmap = build_drilldown_map(elements, view_decls, rendered_keys=rendered_keys)
         orphans = find_orphaned_component_containers(elements, view_decls)
         system_orphans = find_orphaned_container_systems(elements, view_decls)
+        overlong = find_overlong_descriptions(elements)
         view_labels = build_view_labels(elements, view_decls)
-    except Exception as exc:  # parsing must never crash assembly — degrade to no drill-down
-        print("  WARN: DSL model parse failed (%s); drill-down disabled" % exc, file=sys.stderr)
+    except Exception as exc:
+        print("  WARN: DSL model traversal failed (%s); drill-down, coverage lints "
+              "and DSL-derived labels disabled" % exc, file=sys.stderr)
         dmap = {}
         orphans = []
         system_orphans = []
+        overlong = []
         view_labels = {}
+
+    # An explicit --views label is the author speaking directly, so it outranks the
+    # container display name derived from the DSL. Applied ONLY when --views was
+    # passed: detect_views synthesizes its label from the view key, and letting that
+    # win would regress Component tabs from "Analytics & SAM" back to "analytics".
+    # Empty labels are ignored rather than blanking a tab.
+    if args.views:
+        view_labels.update({rk: lbl for (_f, _k, lbl, rk) in views if lbl})
 
     # Completeness lint (non-fatal): system decomposed but never surfaced. Printed
     # before the container-level lint below — it is the same defect one level up,
@@ -1261,6 +1539,16 @@ def main() -> None:
             print("  WARN: container %r (%s) has %d component(s) but no "
                   "`component %s \"Component_%s\"` view."
                   % (name, cid, count, cid, cid), file=sys.stderr)
+    # Authoring lint (non-fatal): the box-description cap. Peer of the view-density
+    # WARN — a documented guideline that nothing measured until now.
+    if overlong:
+        print("Authoring lint: %d element description(s) exceed the %d-character "
+              "cap — each inflates its box and costs diagram readability:"
+              % (len(overlong), MAX_BOX_DESCR_CHARS), file=sys.stderr)
+        for eid, name, length in overlong:
+            print("  WARN: %r (%s) has a %d-character description."
+                  % (name, eid, length), file=sys.stderr)
+
     if dmap:
         total_wired = 0
         for _f, key, _lbl, _rk in views:
@@ -1270,9 +1558,22 @@ def main() -> None:
     else:
         print("Drill-down: no container has a deeper Component view; none wired.")
 
+    # Hoist repeated <text> presentation attributes into shared CSS classes. Runs
+    # last, over the whole SVG set at once, so class numbering is unique across the
+    # single output document (see hoist_text_styles). Drill-down wiring above keys
+    # on <g class="entity">, which this pass never touches.
+    before = sum(len(s) for s in svgs.values())
+    svgs, text_css = hoist_text_styles(svgs)
+    after = sum(len(s) for s in svgs.values())
+    if before:
+        print("Text styles: %d CSS class(es); SVG payload %s -> %s chars (-%.1f%%)"
+              % (text_css.count("}"), format(before, ","), format(after, ","),
+                 100 * (before - after) / before))
+
     # Build and write HTML
     dsl_escaped = html_mod.escape(dsl_source)
-    page = build_html(views, svgs, dsl_escaped, system_name, view_labels=view_labels)
+    page = build_html(views, svgs, dsl_escaped, system_name, view_labels=view_labels,
+                      text_css=text_css)
 
     if args.output:
         out_path = Path(args.output)
@@ -1283,17 +1584,18 @@ def main() -> None:
 
     print(f"\nWritten {len(page):,} chars to {out_path}")
 
-    # Final verification on the output
+    # Final verification on the output. This re-checks the embedded SVGs in the
+    # form they actually ship — after drill-down wiring and text-style hoisting —
+    # which is the only point where the bytes a browser will parse are the bytes
+    # under test. It replaces a narrower check that scanned for two patterns and
+    # subtracted their html-escaped count from their raw count; because the raw and
+    # escaped forms are disjoint strings, that subtraction never removed a false
+    # positive and instead masked one real violation per escaped mention in the DSL
+    # panel. A raw hit is always a violation, so no subtraction is warranted.
     print("\nFinal HTML verification:")
-    for pattern, desc in [('class="title"', "title group"), ("<?plantuml", "processing instruction")]:
-        if pattern in page:
-            # Check if it's only in the DSL panel (escaped)
-            escaped = html_mod.escape(pattern)
-            outside_dsl = page.count(pattern) - page.count(escaped)
-            if outside_dsl > 0:
-                print(f"  FAIL: {outside_dsl} unescaped {desc} found in output!", file=sys.stderr)
-                sys.exit(1)
-        print(f"  OK: {desc}")
+    n_checked = verify_embedded_svgs(page)
+    print("  OK: %d embedded SVG(s) free of title/PI/script/foreignObject, "
+          "active-scheme hrefs, and unexpected event handlers" % n_checked)
 
     print("\nDone.")
 

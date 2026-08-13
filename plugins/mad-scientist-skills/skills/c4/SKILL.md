@@ -1,6 +1,6 @@
 ---
 name: c4
-description: Creates interactive C4 model architecture diagrams using Structurizr DSL — the official C4 notation by Simon Brown. Produces self-contained single-file HTML visualizations with embedded SVGs rendered locally via Java 21+ and the Structurizr export pipeline (structurizr.war + plantuml.jar). Generates System Context, Container, Component, Dynamic, and Deployment diagrams with tabbed navigation, DSL panel, and copyable Structurizr DSL source. Requires Java 21+ and Graphviz (dot). Use when the user asks for architecture diagrams, C4 diagrams, system diagrams, or wants to visualize software architecture.
+description: Creates interactive C4 model architecture diagrams using Structurizr DSL — the official C4 notation by Simon Brown. Produces self-contained single-file HTML visualizations with embedded SVGs rendered locally via Java 21+ and the Structurizr export pipeline (structurizr.war + plantuml.jar). Generates System Context, Container, Component, Dynamic, and Deployment diagrams with tabbed navigation, DSL panel, and copyable Structurizr DSL source. Requires Java 21+ and Graphviz — verify Graphviz with `java -jar plantuml.jar -testdot`, never with `which dot` (PlantUML resolves dot through its own search paths, so an installed Graphviz that is absent from PATH still works). Use when the user asks for architecture diagrams, C4 diagrams, system diagrams, or wants to visualize software architecture.
 ---
 
 # C4 Architecture Diagram Builder
@@ -376,7 +376,7 @@ the views together.
 
 | Constant | Unit | Governs | Default |
 |---|---|---|---|
-| `MAX_BOX_DESCR_CHARS` | characters | Authoring cap on each element description — keeps text human-readable | `200` |
+| `MAX_BOX_DESCR_CHARS` | characters | Authoring cap on each element description — keeps text human-readable; warned at assemble time | `200` |
 | `BOX_WRAP_WIDTH_PX` | pixels | Render wrap — pixel width at which box text wraps to the next line | `200` |
 | `MAX_ELEMENTS_PER_VIEW` | elements | Subdivision guideline — split a view when it exceeds this | `15` |
 
@@ -389,12 +389,32 @@ ultra-wide row. `200` matches C4's stock wrap for fairly square boxes; lower it
 - **Authoring rule:** cap each element `description` at `MAX_BOX_DESCR_CHARS` (200)
   characters. A box cannot shrink below its widest unbreakable token (a long word,
   URL, or the `<<stereotype>>` label) — the pixel wrap helps typical prose, not a
-  single long identifier.
+  single long identifier. The assembler **measures** this and prints a non-fatal
+  `WARN` per breach, worst first:
+
+  ```
+  Authoring lint: 3 element description(s) exceed the 200-character cap …
+    WARN: 'documentation-audit Skill' (documentationAuditSkill) has a
+          317-character description.
+  ```
+
+  The rule went unmeasured for a long time and drifted accordingly: a scan of 18
+  real workspaces found **14 descriptions over the cap, the worst at 664
+  characters** — including three in this plugin's own diagram, since fixed.
 - **Subdivision rule:** when a container view would exceed ~`MAX_ELEMENTS_PER_VIEW`
   (15) *boxes* (people/systems/containers/components in scope — relationships and
   boundary clusters do not count), emit **one `Component_<containerId>` view per
-  container** instead of a single combined `Components` view. This is a modeling
-  decision you (or Claude) make — the tool does not measure or enforce it.
+  container** instead of a single combined `Components` view. Splitting remains a
+  modeling decision you (or Claude) make, but the assembler now **counts** the
+  boxes and prints a non-fatal `WARN` for any view above the guideline:
+
+  ```
+  WARN: structurizr-Containers.svg has 41 element nodes — the readability
+        guideline is 15; consider splitting it.
+  ```
+
+  It warns rather than fails because a legitimately flat system can exceed 15.
+  Treat the warning as a prompt to re-read the view, not as an error to silence.
 - **View-key naming convention** (powers grouping *and* drill-down):
 
   ```
@@ -675,9 +695,35 @@ After installing, confirm with `java -jar ~/.claude/tools/plantuml.jar -testdot`
 in this skill — Graphviz is required so checked-in diagrams keep full layout
 fidelity.
 
+### Checking whether an element actually rendered
+
+Grepping the generated HTML for an element name is **not** a valid check. Three
+ways it returns a confident wrong answer:
+
+1. **The DSL panel embeds the entire `.dsl` source**, so every element name appears
+   in the page whether or not it rendered. Match each tab panel to its own `<svg>`
+   block first and search inside that block only.
+2. **`wrapWidth` splits a label across several `<text>` elements**, one per word.
+   Searching for `"StatsBomb Orchestrator"` returns zero hits on a diagram that
+   renders it perfectly. Extract the `<text>` nodes of one SVG, collapse
+   whitespace, and match against that.
+3. **Collapsed text matches descriptions too**, not just element labels — one
+   container's description mentioning another component is a false positive.
+
+The authoritative roster is the per-panel `data-qualified-name` attribute list
+(`_ENTITY_OPEN_RE` in `c4_assemble.py`), which names exactly the elements that
+rendered as boxes. Cross-check against that, not against page text.
+
+Because `hoist_text_styles` moves `fill`/`font-*` onto classes, do not grep for a
+literal `font-family="sans-serif"` to find text either — match `<text` itself.
+
 ### Important notes
 
 - Always save the `.dsl` file to disk first — the export pipeline reads from disk
+- **The export and render steps each take longer than 30 s on Windows.** Some
+  harnesses kill a foreground shell call at that threshold, which looks exactly
+  like a toolchain failure. Background the call (or run it from PowerShell) rather
+  than concluding Java or Graphviz is broken.
 - The export produces intermediate `.puml` files in a temp directory — these are not kept
 - Both structurizr.war and plantuml.jar are auto-downloaded to `~/.claude/tools/` on first use
 - If Java is unavailable, save the `.dsl` file and inform the user they can render it with Structurizr Lite, Structurizr Cloud, or any compatible tool
@@ -708,7 +754,7 @@ The viewer is **generated** by `c4_assemble.py` (the `TEMPLATE` string plus `bui
 The old single row of flat pills was replaced by a two-level navigation that scales past ~6 views:
 
 - **Group row** (`.grp` buttons, `role="tab"`) — top-level C4 levels in a fixed order (`GROUP_ORDER`): Context, Containers, Components, Dynamic, Deployment, then a synthetic **DSL** group. Clicking a group calls `c4ShowGroup(g)`, which activates that group's first view. Unrecognised keys sort after the canonical levels; `TAIL_GROUPS` (currently just `DSL`) then sorts *after those*, so the synthetic source panel is always the last tab rather than sliding mid-row whenever a bespoke key exists.
-- **Sub-tab row** (`.subrow` / `.subtab`) — shown only for a group with **more than one** view (e.g. several split `Component_<container>` views under **Components**). A single-view group renders an empty `.subrow` placeholder and no sub-tabs. Sub-tab labels prefer the container's DSL display name (via `build_view_labels`) over the raw key suffix.
+- **Sub-tab row** (`.subrow` / `.subtab`) — shown only for a group with **more than one** view (e.g. several split `Component_<container>` views under **Components**). A single-view group renders an empty `.subrow` placeholder and no sub-tabs. Sub-tab labels resolve in this order: an explicit `--views` label wins, then the container's DSL display name (via `build_view_labels`), then the raw key suffix. That ordering matters — auto-detection synthesizes a label from the view key, so letting *any* label win unconditionally would drop a Component tab from `Analytics & SAM` back to the bare suffix `analytics`.
 - **Breadcrumbs** (`.breadcrumb`) — a Component panel shows `Context › Containers › <current>`; a Container panel shows `Context › <current>`. Crumbs are emitted only for ancestor views that actually rendered (`build_breadcrumbs` gates on the existing view keys), so a crumb never points at a missing panel.
 - **Panels** (`.tab-content`, one per view + the DSL panel) — the active panel is shown; others are `display:none`. Each panel is focusable (`tabindex="-1"`) and focused on activation for keyboard users.
 
@@ -716,6 +762,7 @@ The old single row of flat pills was replaced by a two-level navigation that sca
 
 - `parse_view_key(raw_key)` maps a Structurizr view key to `(group, sub_label)` — e.g. `SystemContext → (Context, "System Context")`, `Component_api → (Components, "api")`, `Containers_CI → (Containers, "CI")`. Both `_` and `-` work as the separator. Unknown keys become their own group, which is why a multi-system workspace must name its container views `Containers_<systemId>` (see "View-key naming convention").
 - `view_key_to_tab_id(raw_key)` is the **single source of truth** for the DOM id / `data-tab` / `c4ShowTab('…')` argument: lowercase, `_→-`, strip to `[a-z0-9-]`. It is emitted **unescaped** into attribute and JS-string contexts, so it must be a safe slug. A degenerate key with no alphanumerics falls back to a stable `view-<hash>` id (never an empty id).
+- **Tab order follows the DSL.** The five well-known views keep their fixed order; any project-specific view is then ordered by where its key appears in the DSL's `views` block, so a deliberately sequenced set of split views reads in the order the author wrote. Keys with no DSL declaration (and every key when the DSL fails to parse) fall back to filename order, so the result is deterministic either way. Ordering by filename alone was stable but arbitrary: it silently re-sorted a narrative into alphabetical order.
 - The synthetic DSL panel reserves tab id `dsl` (see the `_DSL_VIEW` constant). Two guards warn instead of silently shadowing a panel: `find_tab_id_collisions` (run over the rendered views **plus** `_DSL_VIEW`) catches two *distinct* keys colliding on any id, and `find_reserved_id_shadow` catches a user view claiming a reserved id — including the exact `raw_key='DSL'` case that the collision check's per-id key-set would otherwise dedup away.
 
 ### Drill-down (click-through between levels)
@@ -732,6 +779,75 @@ Two embedded JSON maps drive navigation: `C4_TAB_GROUP` (tab id → group) and `
 - **Group `onclick` argument** — a group name flows into `onclick="c4ShowGroup('<g>')"`, a JS-string-inside-an-HTML-attribute. HTML-escaping is **wrong** there (the browser HTML-decodes `&#x27;` to `'` before the JS parser runs), so `_js_str_in_attr` emits `\uXXXX` for anything outside a conservative safe set. The `data-group=` attribute and visible text use ordinary `html.escape`.
 - **System name, labels, breadcrumb text** — ordinary `html.escape` (plain HTML text/attribute context).
 - **Embedded SVG** — cleaned by `clean_svg` (strips title/PI/active content) and verified by `verify_clean` before embedding; see *SVG Cleaning* in the `c4_assemble.py` docstring.
+
+### Output size: hoisted `<text>` styling
+
+PlantUML positions and justifies **every word individually**, emitting one `<text>`
+element per word with the whole font stack repeated inline. On a dense multi-view
+page that is thousands of `<text>` elements re-declaring the same handful of
+attribute combinations, and it dominates the file: measured across real projects,
+`<text>` markup ran to roughly 70% of the bytes.
+
+Two passes cut that without changing a pixel:
+
+- `clean_svg` drops `lengthAdjust="spacing"`. `spacing` **is** the SVG initial
+  value, so the attribute is pure repetition (~12% of a page). It is matched on the
+  value, never blanket-stripped — a real `lengthAdjust="spacingAndGlyphs"` survives.
+- `hoist_text_styles` collects the CSS-inheritable presentation attributes
+  (`fill`, `font-family`, `font-size`, `font-style`, `font-weight`, …) into
+  generated `.c4tN` classes appended to the page's own `<style>` block. `x`, `y`
+  and `textLength` stay inline because they are genuinely per-element.
+
+Together these cut a typical page by **~35%** (1.16 MB → 0.74 MB on an 17-view
+model), verified pixel-identical against the pre-change output.
+
+Two constraints worth knowing before touching this code:
+
+- **It must stay a document-wide pass, not a per-SVG one.** Every SVG is embedded
+  in a single HTML document, so `.c4tN` names share one namespace; numbering per
+  SVG would make the same class mean different things in different panels.
+- **`lengthAdjust` cannot move into a class.** It is not a CSS property in SVG 1.1,
+  and it is not inherited from a parent `<g>` either — which is why it is *dropped*
+  when redundant rather than hoisted.
+- **`verify_clean` cannot be re-run after the hoist.** The pipeline order is
+  `clean_svg` → `verify_clean` → `wire_drilldown` → `hoist_text_styles`, and
+  `wire_drilldown` deliberately injects the `onclick`/`onkeydown` handlers that
+  make boxes clickable. `verify_clean` rejects `on*=` handlers by design — it
+  guards PlantUML's *raw* output, before wiring — so re-verifying at the end would
+  abort every build that has drill-down. The hoist instead checks its own
+  invariant: angle-bracket counts per SVG must be unchanged, and a violation falls
+  back to the un-hoisted SVGs with a `WARN`. The end-of-run sweep that *does*
+  cover the final bytes is `verify_embedded_svgs` — see below.
+
+### Final page verification
+
+`verify_clean` guards each SVG as it comes off PlantUML, but two stages run after
+it. `verify_embedded_svgs` therefore re-checks every embedded `<svg>` region **in
+the form it actually ships**, and aborts the build on:
+
+- a title element or `class="title"` group, a `<?plantuml` processing instruction,
+  `<script>`, or `<foreignObject>`;
+- an active-scheme href, matched on the **normalized** value (entities decoded,
+  tabs/newlines stripped) so `jav&#x61;script:` cannot slip past a substring scan;
+- any event handler outside the allowlist of what `wire_drilldown` itself injects
+  — `onclick="c4ShowTab(…"` and `onkeydown="if(event.key===…"`. A correctly-named
+  `onclick` with a foreign payload, an unquoted handler, and a `/`-separated
+  `<rect/onload=…>` are all rejected.
+
+Two scoping decisions worth not "fixing" later:
+
+- **SVG regions, not the whole page.** The page's own chrome legitimately contains
+  a head `<title>` and the inline `<script>` runtime. A whole-page scan for those
+  is permanently red, and a check that always fails is a check nobody reads.
+- **A raw hit is always a violation — never subtract escaped occurrences.** Every
+  author-supplied string (DSL source, system name, labels) is html-escaped before
+  it reaches the page, so the raw and escaped forms are disjoint. The predecessor
+  subtracted one count from the other, which masked one real violation per escaped
+  mention in the DSL panel.
+
+The saving is in raw bytes, which is what matters for a file opened straight from
+disk. Compressed, the same change is worth only ~6% (these pages gzip to about an
+eighth of their size either way), so do not expect a proportional drop in repo size.
 
 ### Visual conventions (unchanged)
 
