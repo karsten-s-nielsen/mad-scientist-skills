@@ -3,7 +3,7 @@
 ![Mad Scientist Skills](assets/mad-scientist.jpg)
 
 [![CI](https://github.com/karsten-s-nielsen/mad-scientist-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/karsten-s-nielsen/mad-scientist-skills/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.22.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.23.0-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills are slash-command capabilities that extend Claude Code with specialized knowledge. Install this plugin to get 9 skills for architecture auditing, architecture diagramming, code security analysis, performance optimization, pre-change measurement gating, observability assessment, documentation evaluation, cognitive interface review, and pre-commit quality checks.
@@ -25,7 +25,10 @@
 ## Prerequisites
 
 - **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)** — the AI coding assistant this plugin extends. Install it first.
-- **Java 21+** — required only by the c4 skill for local Structurizr/PlantUML rendering. Both `structurizr.war` and `plantuml.jar` are auto-downloaded on first use. All other skills have no external dependencies.
+- **Java 21+** — required only by the c4 skill for local Structurizr/PlantUML rendering. Both `structurizr.war` and `plantuml.jar` are auto-downloaded on first use.
+- **Graphviz** — also required only by the c4 skill, and a hard prerequisite on par with Java: PlantUML's C4 layout is `dot`-based, and without it PlantUML emits a "Cannot find Graphviz" placeholder **with exit code 0** rather than failing outright. Install with `winget install -e --id Graphviz.Graphviz` (Windows), `brew install graphviz` (macOS), or `apt install graphviz` (Debian/Ubuntu). Verify with `java -jar ~/.claude/tools/plantuml.jar -testdot` — **not** `which dot`, since PlantUML resolves `dot` through its own search paths and an installed Graphviz that is absent from `PATH` works fine.
+
+All other skills have no external dependencies.
 
 > **Safety note:** All audit skills perform read-only analysis — they scan your code and produce a findings report but do not modify files. Only `final-review` and `c4` produce output files (`architecture.html`, `architecture.dsl`).
 
@@ -124,10 +127,12 @@ Structurizr DSL → structurizr.war export → PlantUML C4 → plantuml.jar → 
 ### What it produces
 
 A single HTML file with:
-- Tabbed navigation between C4 diagram levels
-- Embedded SVGs (no CDN or runtime dependencies)
+- Tabbed navigation between C4 diagram levels, ordered as the DSL declares them
+- Embedded SVGs (no CDN or runtime dependencies), with repeated text styling hoisted into shared CSS classes — roughly 35% smaller than the raw PlantUML output, pixel for pixel identical
 - Copyable Structurizr DSL source panel
 - Dark theme — open in any browser
+
+Assembly also prints non-fatal readability warnings: views above ~15 element boxes, element descriptions above 200 characters, and any container or software system whose decomposition renders in no view.
 
 A companion `.dsl` source file for version control.
 
