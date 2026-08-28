@@ -325,6 +325,7 @@ Ask naturally ("Measure before I optimize this", "Check the baseline first") or 
 ```
 
 </details>
+
 <details>
 <summary><strong>observability-audit</strong> — Two-Tier Observability Audit (coverage, tiers, templates)</summary>
 

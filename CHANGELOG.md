@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.24.0] - 2026-08-28
+
 ### Added
 
 - **`unbiased-review`** — A tenth skill: non-author review of an artifact (spec, plan, or implementation) produced by another session. Verifies the artifact's claims against the actual repo, grades TDD and hexagonal discipline, reproduces empirical claims in an isolated scratch clone, and reports severity-ranked findings with stable IDs — deliberately **without** writing the fix, so the author still defends their own work. Peer to `final-review` (that gates your own work pre-commit; this reviews someone else's), with interoperable severities. Generalized from an InterSystems-specific origin to a Python/JS-centric default. First skill in the plugin to ship `commands/` (four deterministic entry points: `/review-spec`, `/review-plan`, `/review-impl`, `/re-review`) and a `references/` subdirectory.
@@ -328,7 +330,8 @@ The new anti-patterns provide grep-based early detection of this class of bug. F
 ### Fixed
 - Trailing newline in `architecture.html`
 
-[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.23.0...HEAD
+[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.24.0...HEAD
+[1.24.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.23.0...v1.24.0
 [1.23.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.22.0...v1.23.0
 [1.22.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.21.2...v1.22.0
 [1.21.2]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.21.1...v1.21.2
