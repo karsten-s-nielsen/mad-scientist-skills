@@ -3,10 +3,10 @@
 ![Mad Scientist Skills](assets/mad-scientist.jpg)
 
 [![CI](https://github.com/karsten-s-nielsen/mad-scientist-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/karsten-s-nielsen/mad-scientist-skills/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.23.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.24.0-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills are slash-command capabilities that extend Claude Code with specialized knowledge. Install this plugin to get 9 skills for architecture auditing, architecture diagramming, code security analysis, performance optimization, pre-change measurement gating, observability assessment, documentation evaluation, cognitive interface review, and pre-commit quality checks.
+[Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills are slash-command capabilities that extend Claude Code with specialized knowledge. Install this plugin to get 10 skills for architecture auditing, architecture diagramming, code security analysis, performance optimization, pre-change measurement gating, observability assessment, documentation evaluation, cognitive interface review, pre-commit quality checks, and non-author artifact review.
 
 ## Skills
 
@@ -21,6 +21,7 @@
 | **observability-audit** | Assess monitoring maturity across logging, metrics, tracing, alerting, and SLI/SLO coverage | `/mad-scientist-skills:observability-audit` |
 | **optimization-audit** | Find performance bottlenecks in algorithms, queries, caching, concurrency, and cloud cost | `/mad-scientist-skills:optimization-audit` |
 | **security-audit** | Identify vulnerabilities via threat modeling, code scanning, dependency audit, and infrastructure review | `/mad-scientist-skills:security-audit` |
+| **unbiased-review** | Review a spec, plan, or implementation written by another session — verify its claims against the repo, grade TDD/hexagonal discipline, report severity-ranked findings without writing the fix | `/mad-scientist-skills:unbiased-review` |
 
 ## Prerequisites
 
@@ -30,7 +31,7 @@
 
 All other skills have no external dependencies.
 
-> **Safety note:** All audit skills perform read-only analysis — they scan your code and produce a findings report but do not modify files. Only `final-review` and `c4` produce output files (`architecture.html`, `architecture.dsl`).
+> **Safety note:** The audit skills perform read-only analysis — they scan your code and produce a findings report but do not modify files. `final-review` and `c4` produce output files (`architecture.html`, `architecture.dsl`). `unbiased-review` never writes to the repo under review, but does write its own report to `reviews/` and uses a scratch directory outside the target tree.
 
 ## Installation
 
@@ -324,7 +325,6 @@ Ask naturally ("Measure before I optimize this", "Check the baseline first") or 
 ```
 
 </details>
-
 <details>
 <summary><strong>observability-audit</strong> — Two-Tier Observability Audit (coverage, tiers, templates)</summary>
 
@@ -462,6 +462,35 @@ Ask naturally ("Security audit this project", "Threat model the API") or invoke 
 
 ```
 /mad-scientist-skills:security-audit
+```
+
+</details>
+
+<details>
+<summary><strong>unbiased-review</strong> — Non-Author Review Gate (spec / plan / implementation)</summary>
+
+Reviews an artifact produced by another session. You did not write it, you will not fix it, and you verify rather than trust. Peer to `final-review`: that one gates your own work pre-commit; this one reviews someone else's artifact and never produces the patch. Its severities (`BLOCKING` / `SHOULD FIX` / `CONSIDER`) map onto `final-review`'s Critical+High / Medium / Low so reports interoperate.
+
+### What it does
+
+1. **Establish scope** — pins the artifact (sha) and the target tree (HEAD, status, staged diff)
+2. **Claim extraction** — enumerates every checkable claim before judging any
+3. **Verification** — classifies each claim exact / wrong / imprecise / unverifiable; prefers Grep/Read, uses an isolated scratch clone when only execution settles it
+4. **Rubric passes** — TDD, hexagonal, durability, scope/YAGNI, internal consistency, non-goal challenge
+5. **Self-check then report** — a full report to `reviews/` plus a short paste-back block; leaves the target's `git status` unchanged
+
+### Ships slash-commands
+
+Unlike the audit skills, this one ships four commands as deterministic entry points, because "review this" otherwise collides with generic review matching:
+
+```
+/review-spec <path>     /review-plan <path>     /review-impl <path>     /re-review <path>
+```
+
+Or invoke the skill directly:
+
+```
+/mad-scientist-skills:unbiased-review
 ```
 
 </details>

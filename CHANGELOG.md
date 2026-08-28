@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`unbiased-review`** — A tenth skill: non-author review of an artifact (spec, plan, or implementation) produced by another session. Verifies the artifact's claims against the actual repo, grades TDD and hexagonal discipline, reproduces empirical claims in an isolated scratch clone, and reports severity-ranked findings with stable IDs — deliberately **without** writing the fix, so the author still defends their own work. Peer to `final-review` (that gates your own work pre-commit; this reviews someone else's), with interoperable severities. Generalized from an InterSystems-specific origin to a Python/JS-centric default. First skill in the plugin to ship `commands/` (four deterministic entry points: `/review-spec`, `/review-plan`, `/review-impl`, `/re-review`) and a `references/` subdirectory.
+
+### Changed
+
+- `CONTRIBUTING.md` documents two new optional skill-layout patterns — a `references/` subdirectory and a plugin-level `commands/` directory — and records `unbiased-review` alongside `final-review` as a review gate.
+
 ## [1.23.0] - 2026-08-13
 
 ### Added
