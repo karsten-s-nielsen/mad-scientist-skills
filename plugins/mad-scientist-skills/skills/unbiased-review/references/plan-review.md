@@ -65,6 +65,16 @@ Worktrees are a banned workflow here: flag any plan that proposes one. More than
 cycle is the exception, not the default — flag it and ask for the reason. A plan that names its single
 feature branch clears this silently.
 
+### Commit authorization
+
+No commit happens without the human's **explicit** approval. A plan step that commits — or otherwise
+lands code — on its own authority is a `BLOCKING` finding, however routine the commit looks. "Commit
+when green", "commit and open the PR", "commit each step" all fail this: they commit without a gate.
+Named consequence: the session commits work the human never signed off on — the exact failure this
+rule exists to prevent. The plan must reach "ready to commit", **stop for explicit approval**, and
+commit only after it. A plan whose commit is gated on the human's approval clears silently. (Neither
+"the tests pass" nor the plan itself listing the step is approval.)
+
 ### Verification steps
 
 Does the plan say how to prove each step worked, with a runnable command? Does it name the suite, the

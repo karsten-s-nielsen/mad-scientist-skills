@@ -52,6 +52,10 @@ complete and its tests are green — is a `BLOCKING` finding, whatever upstream 
 from. A stream of half-tested commits is not a rollback target and not shippable history; the
 "granular log" is noise that buries the tested checkpoints. Do not treat it as a matter of taste.
 
+Likewise, a spec (or a workflow it prescribes) that has the session **commit without the human's
+explicit approval** is a `BLOCKING` finding: no commit happens on the session's own authority, and a
+spec listing a commit step is not that approval. See `plan-review.md`'s *Commit authorization*.
+
 ### Scope
 
 YAGNI ruthlessly, in both directions. What is here that no stated requirement needs? What is missing
