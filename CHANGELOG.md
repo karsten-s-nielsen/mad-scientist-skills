@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.26.0] - 2026-08-29
+
+### Added
+
+- **`unbiased-review`** (`plan-review` / `spec-review`) — a **commit-authorization** check: a plan or spec that has the session `git commit` / `git push` (or otherwise land code) without an explicit human-approval gate is a `BLOCKING` finding. "Commit when green" / "commit and open the PR" fail it; a commit gated on the human's explicit approval clears silently. (Mirrors the standing rule in the global instructions — no session commits without approval.)
+
 ## [1.25.0] - 2026-08-29
 
 ### Added
@@ -340,7 +346,8 @@ The new anti-patterns provide grep-based early detection of this class of bug. F
 ### Fixed
 - Trailing newline in `architecture.html`
 
-[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.25.0...HEAD
+[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.26.0...HEAD
+[1.26.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.25.0...v1.26.0
 [1.25.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.24.0...v1.25.0
 [1.24.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.23.0...v1.24.0
 [1.23.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.22.0...v1.23.0
