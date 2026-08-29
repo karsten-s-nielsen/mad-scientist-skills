@@ -1,9 +1,9 @@
-workspace "mad-scientist-skills" "Claude Code plugin providing architecture auditing, C4 architecture diagrams, cognitive interface auditing, security auditing, observability auditing, optimization auditing, pre-change measurement gating, documentation auditing, and pre-commit quality gates" {
+workspace "mad-scientist-skills" "Claude Code plugin providing architecture auditing, C4 architecture diagrams, cognitive interface auditing, security auditing, observability auditing, optimization auditing, pre-change measurement gating, documentation auditing, pre-commit quality gates, and non-author artifact review" {
 
     model {
         developer = person "Developer" "Uses Claude Code for software engineering tasks"
 
-        plugin = softwareSystem "mad-scientist-skills" "Claude Code plugin of nine skills: architecture, cognitive-interface, security, observability, optimization and documentation auditing, plus C4 diagrams, measurement gating, and a pre-commit gate" {
+        plugin = softwareSystem "mad-scientist-skills" "Claude Code plugin of ten skills: architecture, cognitive-interface, security, observability, optimization, documentation audits, C4 diagrams, measurement and pre-commit gates, and non-author review" {
             architectureAuditSkill = container "architecture-audit Skill" "Architecture audit covering Hexagonal/Ports & Adapters, DDD bounded contexts, Clean Architecture, SOLID, coupling/cohesion, CQRS, Event Sourcing, Twelve-Factor, API-First, and ADRs (beta)" "SKILL.md"
             c4Skill = container "c4 Skill" "Generates interactive C4 architecture diagrams from Structurizr DSL" "SKILL.md, c4_assemble.py, 5 templates"
             cognitiveAuditSkill = container "cognitive-interface-audit Skill" "Cognitive interface audit: Norman's Gulfs, GOMS, Wood error tolerance, NASA-TLX load, Kirk and Cleveland & McGill visualization integrity, trust calibration, Gestalt, EID, and accessibility" "SKILL.md, 5 templates"
@@ -13,6 +13,7 @@ workspace "mad-scientist-skills" "Claude Code plugin providing architecture audi
             observabilityAuditSkill = container "observability-audit Skill" "Two-tier observability audit covering instrumentation, logging, metrics, tracing, pipeline/ML monitoring, alerting, and SLIs/SLOs (beta)" "SKILL.md, 7 templates"
             optimizationAuditSkill = container "optimization-audit Skill" "Single-tier optimization audit covering algorithm efficiency, database queries, caching, concurrency, pipelines, distributed execution, cloud cost, and profiling" "SKILL.md, 8 templates"
             securityAuditSkill = container "security-audit Skill" "Two-tier security audit covering STRIDE (incl. cross-org boundaries), OWASP Top 10, ML/AI model security, AI regulatory compliance, infrastructure (incl. confidential computing), and supply chain" "SKILL.md, 6 templates"
+            unbiasedReviewSkill = container "unbiased-review Skill" "Non-author review of a spec, plan, or implementation from another session: verifies claims vs the repo, grades TDD and hexagonal discipline, reports severity-ranked findings without writing the fix" "SKILL.md, references/, 4 commands"
         }
 
         claudeCode = softwareSystem "Claude Code" "Anthropic CLI agent for software engineering" "External"
@@ -30,6 +31,8 @@ workspace "mad-scientist-skills" "Claude Code plugin providing architecture audi
         claudeCode -> observabilityAuditSkill "Invokes" "/mad-scientist-skills:observability-audit"
         claudeCode -> optimizationAuditSkill "Invokes" "/mad-scientist-skills:optimization-audit"
         claudeCode -> securityAuditSkill "Invokes" "/mad-scientist-skills:security-audit"
+        claudeCode -> unbiasedReviewSkill "Invokes" "/mad-scientist-skills:unbiased-review"
+        unbiasedReviewSkill -> finalReviewSkill "Severity maps onto" "Interoperable reports"
         finalReviewSkill -> c4Skill "Delegates diagram generation to" "Skill invocation"
         c4Skill -> structurizr "Exports DSL via" "structurizr.war CLI"
         c4Skill -> plantuml "Renders SVGs via" "plantuml.jar CLI"

@@ -13,12 +13,22 @@ Skills live under the following path inside the plugin directory:
 
 ```
 plugins/mad-scientist-skills/
-└── skills/
-    └── <skill-name>/
-        ├── SKILL.md        # Skill definition (YAML frontmatter + body)
-        ├── templates/      # Optional output templates
-        └── *.py            # Optional runtime scripts the skill invokes
+├── skills/
+│   └── <skill-name>/
+│       ├── SKILL.md        # Skill definition (YAML frontmatter + body)
+│       ├── templates/      # Optional output templates
+│       ├── references/     # Optional supporting docs a long SKILL.md routes into
+│       └── *.py            # Optional runtime scripts the skill invokes
+└── commands/               # Optional slash-commands that provide deterministic
+    └── <command>.md        #   entry points to a skill (see Skill Categories)
 ```
+
+`templates/`, `references/`, and a plugin-level `commands/` directory are all optional.
+Use `references/` when a skill's `SKILL.md` grows long enough that splitting its supporting
+material into routed documents keeps the entry file scannable. Add a `commands/` file when a
+skill needs a *deterministic* invocation trigger: a skill is normally selected by description
+match, but a skill whose purpose collides with a common word (e.g. "review") can lose that match
+to a generic or built-in skill, and a slash-command guarantees the intended entry point.
 
 Each skill is self-contained in its own directory. The skill name must be lowercase and hyphenated (e.g., `security-audit`, `optimization-audit`).
 
@@ -76,7 +86,7 @@ mad-scientist-skills contains two categories of skills plus a review gate:
 |---|---|---|---|
 | **Retrospective audit** | After code exists — "audit this codebase for X" | `architecture-audit`, `cognitive-interface-audit`, `documentation-audit`, `observability-audit`, `optimization-audit`, `security-audit` | Prioritised findings report |
 | **Pre-change gate** | Before a code change — "about to modify this function" | `measure-before-optimize` (peer to `optimization-audit`) | Before/after delta, regression flag |
-| **Review gate** | After a change, before commit — "final review before shipping" | `final-review` | Structured pre-commit checklist |
+| **Review gate** | After a change, before commit — "final review before shipping"; or reviewing an artifact authored by another session | `final-review`, `unbiased-review` | Structured checklist / severity-ranked findings |
 
 When adding a new skill, decide its category first. Retrospective audits and pre-change gates often come in **peer pairs** (e.g., `measure-before-optimize` ↔ `optimization-audit`): the pre-change gate captures a baseline and prevents regressions; the retrospective audit finds issues in code that already exists. A peer pair must have **distinct trigger descriptions** so the Skill tool can select between them without ambiguity — `measure-before-optimize`'s description begins with "Pre-change measurement gate," while `optimization-audit`'s begins with "Comprehensive optimization audit."
 
