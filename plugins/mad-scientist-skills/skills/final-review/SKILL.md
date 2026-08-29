@@ -84,9 +84,35 @@ Ensure all documentation reflects the current state of the code:
 - **Code comments**: Do they match what the code actually does? Any TODO/FIXME/HACK comments that should be resolved?
 - **API documentation**: Do endpoint docs match actual request/response shapes?
 - **Configuration docs**: Do documented env vars match what the code actually reads?
-- **Changelog/version**: Are version numbers consistent across all files that declare them?
+- **Changelog**: Is the `CHANGELOG` updated for this change? (Version consistency and the bump itself are handled in **Phase 3.5**.)
 
 Fix any documentation that has drifted from the code. Documentation must describe what IS, not what WAS.
+
+### Phase 3.5: Release Hygiene — version bump and TODO
+
+Run this when the change is being **released** — a version bump is intended, or `CHANGELOG`'s `[Unreleased]` section has accumulated entries. If it is genuinely not a release (a WIP checkpoint the user named as such), skip it and say so. If unsure whether this is a release, ask.
+
+**No unapproved deferrals.** Nothing is deferred, dropped, added to a TODO, or left as a follow-up without the user's explicit approval — this is the author-side of `unbiased-review`'s Hard rule 8 (which `/review-impl` enforces), and a standing rule everywhere. A new backlog entry *is* deferred scope: confirm the user approved it before writing it, and never grow the backlog just to make a release read clean.
+
+**Version bump — everywhere, once, the repo's own way:**
+
+**Single-source first.** The best bump is the one with nothing to sync. If the version is single-sourced — e.g. hatch `[tool.hatch.version]` reading one `_version.py`, with `[project] version` dynamic and `__version__` derived — bumping that one file is the whole job. If instead the same number is hand-typed across several files, the real fix is to *single-source it* (delete the duplication), not to add a script that syncs copies; reserve a sync script for version strings you genuinely cannot derive from package metadata (IaC, wheel URLs, deploy scripts). Then:
+
+1. **Find the mechanism before editing any version string.** Prefer a procedure the repo documents (its `CLAUDE.md`, a `RELEASING.md`). Otherwise discover it: a bump tool or script — a `version` in `pyproject.toml` `[project]`/`[tool.*]`, `.bumpversion.cfg`, `scripts/bump*`, a `Makefile` `bump`/`release` target, `npm`/`poetry`/`hatch version`.
+2. **If a script or tool owns the version, run it — do not hand-edit the files it manages.** Editing a subset by hand is the recurring corruption: some files move, the rest silently lag. (luxury-lakehouse: edit `pyproject.toml`, then `uv run python scripts/bump_wheel.py` propagates the wheel version to every consumer — deploy scripts, Terraform, PEP-723 scripts — and `bump_wheel.py --check` is the CI gate that catches a stale one. Hand-editing those consumers is wrong.)
+3. **If there is no script, update EVERY file that declares the version — all of them.** Do not work from memory of "the N files": find them with `git grep -nF "<current-version>"` (excluding `CHANGELOG`/history) and update each real declaration. (silly-kicks has no bump script and carries the version in several files; missing one is the classic release bug.)
+4. **Verify the bump landed everywhere.** After bumping, `git grep -nF "<old-version>"` must return nothing outside history/changelog; run the bump tool's `--check` if it has one. A stray old version is a partial bump — the exact failure this step exists to prevent.
+5. If you had to discover the procedure rather than read it, offer to record it (in the repo's `CLAUDE.md` or a `RELEASING.md`) so the next release doesn't re-derive it.
+
+Match each version-bearing file's existing format; never guess it.
+
+**TODO / backlog document — maintain at release:**
+
+If the repo has a TODO / backlog / roadmap doc:
+
+1. **Replace the top summary; keep no history.** These docs open with a "Last updated" / "Current (unreleased)" style block. Replace it wholesale with *only* the current release's summary — do not append, and do not keep prior releases' summaries. Git and the `CHANGELOG` hold history.
+2. **Remove completed items entirely.** Every item shipped in this release is deleted from its section (on-deck, tech-debt, research — whatever the repo calls them). Leaving a shipped item in place — marked done, ticked, struck through, or moved to a "Completed" section — is **banned**. The convention is *no breadcrumbs on shipped work*.
+3. **Preserve the document's shape.** Keep its headings, ordering, and any legend, and match its style; if the repo has a TODO-format test (e.g. silly-kicks' `tests/test_todo_md_format.py`, which guards the shape without pinning specific IDs precisely so shipped entries can leave), it must still pass. Read the doc's own structure and match it — do not impose a new one.
 
 ### Phase 4: Architecture Diagram
 
@@ -144,6 +170,11 @@ Present a structured summary to the user:
 - [x] Decision inventory scanned (Phase 2.5)
 - [x] ADRs up to date / drafted where needed
 
+### Release Hygiene (if this is a release)
+- [x] Version bumped to X.Y.Z — verified no stale old version remains (bump script run, or every version-bearing file updated)
+- [x] TODO/backlog: top summary replaced with this release only; N completed items removed entirely; structure intact
+- [x] Nothing deferred or added to the backlog without approval
+
 ### Issues Found
 | # | Severity | File | Issue | Status |
 |---|----------|------|-------|--------|
@@ -157,6 +188,8 @@ Present a structured summary to the user:
 ## Important rules
 
 - **Fix as you go.** Don't just report — remediate. Fix Critical and High issues during the review.
+- **No unapproved deferrals.** Nothing is deferred, dropped, added to a TODO, or left as a follow-up without the user's explicit approval. Surface it and ask — do not pre-decide it (Phase 3.5).
+- **Version bump is all-or-nothing.** If the repo has a bump script/tool, run it and never hand-edit the files it owns; otherwise update every file that declares the version and verify no stale version remains (Phase 3.5).
 - **Evidence-based claims.** Every "up to date" claim must come from actually reading the file and comparing to code.
 - **No assumptions.** Read the actual files. Don't assume README is correct because it existed before your changes.
 - **Architecture diagram is mandatory.** Every final review produces or updates `architecture.html`.

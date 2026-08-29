@@ -3,7 +3,7 @@
 ![Mad Scientist Skills](assets/mad-scientist.jpg)
 
 [![CI](https://github.com/karsten-s-nielsen/mad-scientist-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/karsten-s-nielsen/mad-scientist-skills/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.24.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.25.0-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills are slash-command capabilities that extend Claude Code with specialized knowledge. Install this plugin to get 10 skills for architecture auditing, architecture diagramming, code security analysis, performance optimization, pre-change measurement gating, observability assessment, documentation evaluation, cognitive interface review, pre-commit quality checks, and non-author artifact review.
@@ -16,7 +16,7 @@
 | **c4** | Generate interactive C4 architecture diagrams as self-contained HTML | `/mad-scientist-skills:c4` |
 | **cognitive-interface-audit** | Find usability problems, mental model gaps, cognitive overload, and accessibility violations | `/mad-scientist-skills:cognitive-interface-audit` |
 | **documentation-audit** | Evaluate documentation quality, structure, clarity, completeness, and audience fit | `/mad-scientist-skills:documentation-audit` |
-| **final-review** | Pre-commit quality gate with code review, documentation check, and architecture diagram | `/mad-scientist-skills:final-review` |
+| **final-review** | Pre-commit quality gate with code review, documentation check, release hygiene (version + TODO), and architecture diagram | `/mad-scientist-skills:final-review` |
 | **measure-before-optimize** | Pre-change measurement gate for perf-sensitive functions — captures baseline and verifies regression stays within threshold | `/mad-scientist-skills:measure-before-optimize` |
 | **observability-audit** | Assess monitoring maturity across logging, metrics, tracing, alerting, and SLI/SLO coverage | `/mad-scientist-skills:observability-audit` |
 | **optimization-audit** | Find performance bottlenecks in algorithms, queries, caching, concurrency, and cloud cost | `/mad-scientist-skills:optimization-audit` |
@@ -266,8 +266,9 @@ Reviews your entire project before you commit.
 1. **Codebase discovery** — reads project docs, identifies tech stack and architecture
 2. **Code quality review** — consistency, best practices, dead code, type safety, security
 3. **Documentation review** — ensures README, CLAUDE.md, and API docs match the actual code
-4. **Architecture diagram** — generates or updates `architecture.html` using the c4 skill
-5. **Verification summary** — structured report with issues found, fixes applied, and commit readiness
+4. **Release hygiene** (at release) — bumps the version everywhere the repo declares it (single-source, a bump script, or every declaring file — always verified) and maintains the TODO/backlog
+5. **Architecture diagram** — generates or updates `architecture.html` using the c4 skill
+6. **Verification summary** — structured report with issues found, fixes applied, and commit readiness
 
 ### Usage
 

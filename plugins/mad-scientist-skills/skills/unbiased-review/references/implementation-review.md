@@ -20,10 +20,24 @@ test files reviews the wrong change — and misses the tests entirely, which inv
 
 ### Does it match the plan and the spec?
 
+Anchor on the approved spec and plan located in Phase 0 — the actual documents, including uncommitted
+or untracked ones in the working tree, not the author's description of them. If the author says "the
+plan scoped this to X", open the plan and check; a scope claim you cannot verify against the document
+blocks `APPROVE` (Hard rules 3, 8).
+
 Three-way: spec intent, plan steps, actual diff. Report drift in both directions — code with no
 corresponding step, and steps with no corresponding code. Where the spec was reviewed, check the
 findings report; if a blocking finding was accepted and the code does not reflect it, that is a finding
 with a known ID, not a new one.
+
+### Scope and deferrals
+
+Hunt every place the change delivered less than the approved bar: a `TODO`/`FIXME`, a "follow-up"
+comment or ticket, a dropped requirement, a simplified-for-now approach, a test the author chose not to
+write, a requirement the handoff note reclassifies "out of scope". For each, find the human's approval
+in the record. No approval → it is a finding — `BLOCKING` if it drops below an approved requirement or
+the agreed quality bar — not a follow-up you get to grant. The author does not set scope, and neither
+do you (Hard rule 8). A green suite over the delivered subset is not evidence the subset was authorized.
 
 ### Run the tests
 

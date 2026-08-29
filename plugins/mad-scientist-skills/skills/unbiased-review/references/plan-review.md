@@ -35,12 +35,35 @@ outlive their usefulness.
 
 ### Commit structure
 
-Each commit independently valid — no step leaves the tree broken, and each can be dropped or reordered
-if someone else lands a change first. Check the claim rather than accepting it: a commit that deletes a
-consumer's only data source while its replacement arrives in the next commit is not independently
-valid, however it is described.
+Each commit must be a **fully-tested, coherent state** — a rollback target someone would actually
+return to. "It compiles" and "its own micro-check passes" are not the bar: a commit that adds a
+function "with no error handling yet", or that lands before the feature it belongs to is complete and
+its tests are green, is a half-tested increment, not a valid rollback target. Check the claim rather
+than accepting it: a commit that deletes a consumer's only data source while its replacement arrives in
+the next commit is not independently valid, however it is described.
+
+**Block micro-commit cadence — this is a `BLOCKING` finding, not a style note.** A plan that prescribes
+committing per step, "after every change", "as soon as it compiles", a target commit *count* ("~N
+small commits"), or otherwise optimises for granular history / easy bisecting rather than for each
+commit being a tested, coherent unit — name the specific commits that land half-tested and raise it
+`BLOCKING`. The named consequence: a stream of half-tested commits has no value — nobody bisects to or
+rolls back to an untested state, so the "granular history" is noise that buries the real tested
+checkpoints. That an upstream workflow recommends the cadence (an official skill, a house convention,
+"standard incremental commits") is **not** a defence; in this project a commit that is not a
+fully-tested, coherent state is not allowed, and a plan cannot inherit its way around that. The
+legitimate unit is one commit per coherent, fully-tested change — a feature, a fix, a refactor with its
+tests green — however many steps it took to build. Do not soften this to "consider batching"; the plan
+must be restructured before it proceeds.
 
 Check ordering dependencies that are real but unstated. If commit 3 needs commit 1's module, say so.
+
+### Branch strategy
+
+The plan should land on a single **feature branch** off the default branch — not a git worktree or other
+parallel checkout, and not (without a stated reason) work fanned across several branches in one cycle.
+Worktrees are a banned workflow here: flag any plan that proposes one. More than one feature branch per
+cycle is the exception, not the default — flag it and ask for the reason. A plan that names its single
+feature branch clears this silently.
 
 ### Verification steps
 

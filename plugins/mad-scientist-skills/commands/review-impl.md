@@ -26,6 +26,12 @@ git -C <target> ls-files --others --exclude-standard
 **Untracked files are part of the change.** Reviewing staged-only content on a tree with untracked new
 test files reviews the wrong change and misses the tests entirely, which inverts every TDD finding.
 
+**Establish the approved bar before judging scope.** Locate the spec and plan in the target — including
+uncommitted/untracked docs in the working tree — and any saved spec/plan review in the reviews
+location. Those set expectations, not the author's summary of them. If none exists, that absence is a
+finding and blocks `APPROVE`. No session decides scope, defers work, or records a follow-up without the
+human's approval; an unapproved deferral is a finding, never something you bless (Hard rules 3, 8).
+
 Then: three-way check against spec and plan (and any prior report's finding IDs), the suite run in a
 scratch clone with real numbers, the red-green proof for the change's core assertions, and architecture
 graded by import graph rather than folder names.
