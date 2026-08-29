@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.25.0] - 2026-08-29
+
+### Added
+
+- **`unbiased-review`** — Hard rule 8: scope belongs to the human, so an unapproved deferral, TODO, follow-up, or quality reduction is a **finding**, never something the reviewer blesses. Phase 0 now requires establishing the bar from the actual approved spec/plan (including uncommitted/untracked docs in the working tree), not the author's paraphrase; `APPROVE WITH FOLLOW-UPS` can no longer absorb an unapproved deferral; and a "Red flags" section names the rationalizations that precede signing off on an unapproved cut.
+- **`unbiased-review`** (`plan-review` / `spec-review`) — a commit-cadence check that **blocks** a plan or spec prescribing micro-commits (per-step / "commit often" / "~N small commits"): each commit must be a fully-tested, coherent rollback target, and a stream of half-tested commits is a `BLOCKING` finding.
+- **`final-review`** — a **Release Hygiene** phase (Phase 3.5): version bump done the repo's own way (single-source first, else the bump script — never hand-editing its files — else every declaring file, always verified) plus TODO/backlog maintenance at release (top summary replaced with no history; completed items removed entirely). Adds a "no unapproved deferrals" rule.
+- **Version-consistency test** — `tests/test_version_consistency.py` asserts the version agrees across `plugin.json`, `marketplace.json`, and the README badge (and that the two manifest descriptions stay byte-identical), so a partial version bump fails CI instead of merging silently.
+
 ## [1.24.0] - 2026-08-28
 
 ### Added
@@ -330,7 +339,8 @@ The new anti-patterns provide grep-based early detection of this class of bug. F
 ### Fixed
 - Trailing newline in `architecture.html`
 
-[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.24.0...HEAD
+[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.25.0...HEAD
+[1.25.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.24.0...v1.25.0
 [1.24.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.23.0...v1.24.0
 [1.23.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.22.0...v1.23.0
 [1.22.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.21.2...v1.22.0

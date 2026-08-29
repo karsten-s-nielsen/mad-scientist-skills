@@ -43,6 +43,15 @@ twice. Commit plans against the component list. Non-goals against the design bod
 findings but they are also signals: an uncounted table row is usually the row added last, and the
 last-added row often carries an unreviewed decision.
 
+### Commit cadence
+
+If the spec prescribes a commit plan or a commit workflow, hold it to `plan-review.md`'s *Commit
+structure* bar: each commit a fully-tested, coherent rollback target. A spec that bakes in micro-commit
+cadence — per-step commits, "commit often", a commit *count* target, or committing before a feature is
+complete and its tests are green — is a `BLOCKING` finding, whatever upstream workflow it inherited it
+from. A stream of half-tested commits is not a rollback target and not shippable history; the
+"granular log" is noise that buries the tested checkpoints. Do not treat it as a matter of taste.
+
 ### Scope
 
 YAGNI ruthlessly, in both directions. What is here that no stated requirement needs? What is missing
