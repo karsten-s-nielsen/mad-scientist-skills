@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`unbiased-review`** (`plan-review` / `spec-review`) — a commit-cadence check that **blocks** a plan or spec prescribing micro-commits (per-step / "commit often" / "~N small commits"): each commit must be a fully-tested, coherent rollback target, and a stream of half-tested commits is a `BLOCKING` finding.
 - **`unbiased-review`** (`plan-review`) — a branch-strategy check that flags a plan proposing git worktrees (a banned workflow here) or fanning work across multiple branches without a stated reason; a single named feature branch clears silently.
 - **`final-review`** — a **Release Hygiene** phase (Phase 3.5): version bump done the repo's own way (single-source first, else the bump script — never hand-editing its files — else every declaring file, always verified) plus TODO/backlog maintenance at release (top summary replaced with no history; completed items removed entirely). Adds a "no unapproved deferrals" rule.
-- **Version-consistency test** — `tests/test_version_consistency.py` asserts the version agrees across `plugin.json`, `marketplace.json`, and the README badge (and that the two manifest descriptions stay byte-identical), so a partial version bump fails CI instead of merging silently.
+- **Version-consistency test** — `tests/test_version_consistency.py` asserts the version agrees across `plugin.json`, `marketplace.json`, and the README badge, that the two manifest descriptions stay byte-identical, and that the current version has a dated `## [X.Y.Z]` CHANGELOG section **and** a compare-link — so a partial bump or a forgotten CHANGELOG cut fails CI instead of merging silently.
 
 ## [1.24.0] - 2026-08-28
 

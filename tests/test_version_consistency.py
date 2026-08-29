@@ -11,6 +11,11 @@ left behind) from a silent merge into a red build.
 The two manifests also keep the plugin ``description`` byte-identical; that is
 guarded here too, since a description edit to one manifest is just as easy to
 forget in the other.
+
+A companion check guards the release step most often forgotten (missed three
+times across past releases): that the current version has a dated ``## [X.Y.Z]``
+section *and* a ``[X.Y.Z]:`` compare-link in the CHANGELOG — not just changes
+accumulated under ``[Unreleased]``.
 """
 import json
 import re
@@ -20,6 +25,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 PLUGIN_JSON = REPO_ROOT / "plugins" / "mad-scientist-skills" / ".claude-plugin" / "plugin.json"
 MARKETPLACE_JSON = REPO_ROOT / ".claude-plugin" / "marketplace.json"
 README = REPO_ROOT / "README.md"
+CHANGELOG = REPO_ROOT / "CHANGELOG.md"
 
 _SEMVER = r"[0-9]+\.[0-9]+\.[0-9]+"
 _BADGE_RE = re.compile(rf"version-({_SEMVER})-")
@@ -60,4 +66,20 @@ def test_plugin_description_is_byte_identical_across_manifests():
     assert plugin_description == marketplace_description, (
         "plugin.json and marketplace.json plugin descriptions have diverged — "
         "keep them byte-identical (edit both, or copy one into the other)."
+    )
+
+
+def test_changelog_has_a_dated_section_and_compare_link_for_the_current_version():
+    version = _plugin_manifest()["version"]
+    changelog = CHANGELOG.read_text(encoding="utf-8")
+    escaped = re.escape(version)
+    has_section = re.search(rf"^## \[{escaped}\] - \d{{4}}-\d{{2}}-\d{{2}}", changelog, re.MULTILINE)
+    has_link = re.search(rf"^\[{escaped}\]: \S+", changelog, re.MULTILINE)
+    assert has_section, (
+        f"CHANGELOG.md has no dated '## [{version}] - YYYY-MM-DD' section — "
+        "cut the release section; do not leave the changes under [Unreleased]."
+    )
+    assert has_link, (
+        f"CHANGELOG.md footer has no '[{version}]:' compare-link — "
+        "add it (and repoint [Unreleased]) when cutting the release."
     )
