@@ -57,6 +57,14 @@ must be restructured before it proceeds.
 
 Check ordering dependencies that are real but unstated. If commit 3 needs commit 1's module, say so.
 
+### Branch strategy
+
+The plan should land on a single **feature branch** off the default branch — not a git worktree or other
+parallel checkout, and not (without a stated reason) work fanned across several branches in one cycle.
+Worktrees are a banned workflow here: flag any plan that proposes one. More than one feature branch per
+cycle is the exception, not the default — flag it and ask for the reason. A plan that names its single
+feature branch clears this silently.
+
 ### Verification steps
 
 Does the plan say how to prove each step worked, with a runnable command? Does it name the suite, the
