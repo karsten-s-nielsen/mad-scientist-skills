@@ -181,7 +181,7 @@ For each finding: record file path, line number, pattern matched, severity, the 
 
 Explore the project to understand its cognitive interface surface:
 
-- Read `CLAUDE.md`, `README.md`, and any design docs or wireframes
+- Read `CLAUDE.md`, `AGENTS.md`, `README.md`, and any design docs or wireframes
 - Identify the UI tech stack (Streamlit, React, Vue, Angular, Gradio, HTML/CSS, etc.)
 - Map the **cognitive surface**:
   - **Pages / screens**: List every distinct view the user encounters

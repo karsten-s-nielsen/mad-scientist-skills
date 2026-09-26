@@ -79,7 +79,7 @@ This sub-phase is a prompt, not a block. Operator judgment decides whether a dec
 Ensure all documentation reflects the current state of the code:
 
 - **README.md**: Installation instructions still work? Features list accurate? Examples current? API docs match actual endpoints?
-- **CLAUDE.md**: Project instructions still valid? Architecture section matches reality? Test commands work?
+- **CLAUDE.md / AGENTS.md**: Project instructions still valid? Architecture section matches reality? Test commands work?
 - **AGENTS.md**: If present, does it reflect current file structure?
 - **Code comments**: Do they match what the code actually does? Any TODO/FIXME/HACK comments that should be resolved?
 - **API documentation**: Do endpoint docs match actual request/response shapes?
@@ -98,11 +98,11 @@ Run this when the change is being **released** — a version bump is intended, o
 
 **Single-source first.** The best bump is the one with nothing to sync. If the version is single-sourced — e.g. hatch `[tool.hatch.version]` reading one `_version.py`, with `[project] version` dynamic and `__version__` derived — bumping that one file is the whole job. If instead the same number is hand-typed across several files, the real fix is to *single-source it* (delete the duplication), not to add a script that syncs copies; reserve a sync script for version strings you genuinely cannot derive from package metadata (IaC, wheel URLs, deploy scripts). Then:
 
-1. **Find the mechanism before editing any version string.** Prefer a procedure the repo documents (its `CLAUDE.md`, a `RELEASING.md`). Otherwise discover it: a bump tool or script — a `version` in `pyproject.toml` `[project]`/`[tool.*]`, `.bumpversion.cfg`, `scripts/bump*`, a `Makefile` `bump`/`release` target, `npm`/`poetry`/`hatch version`.
+1. **Find the mechanism before editing any version string.** Prefer a procedure the repo documents (its `CLAUDE.md` / `AGENTS.md`, a `RELEASING.md`). Otherwise discover it: a bump tool or script — a `version` in `pyproject.toml` `[project]`/`[tool.*]`, `.bumpversion.cfg`, `scripts/bump*`, a `Makefile` `bump`/`release` target, `npm`/`poetry`/`hatch version`.
 2. **If a script or tool owns the version, run it — do not hand-edit the files it manages.** Editing a subset by hand is the recurring corruption: some files move, the rest silently lag. (luxury-lakehouse: edit `pyproject.toml`, then `uv run python scripts/bump_wheel.py` propagates the wheel version to every consumer — deploy scripts, Terraform, PEP-723 scripts — and `bump_wheel.py --check` is the CI gate that catches a stale one. Hand-editing those consumers is wrong.)
 3. **If there is no script, update EVERY file that declares the version — all of them.** Do not work from memory of "the N files": find them with `git grep -nF "<current-version>"` (excluding `CHANGELOG`/history) and update each real declaration. (silly-kicks has no bump script and carries the version in several files; missing one is the classic release bug.)
 4. **Verify the bump landed everywhere.** After bumping, `git grep -nF "<old-version>"` must return nothing outside history/changelog; run the bump tool's `--check` if it has one. A stray old version is a partial bump — the exact failure this step exists to prevent.
-5. If you had to discover the procedure rather than read it, offer to record it (in the repo's `CLAUDE.md` or a `RELEASING.md`) so the next release doesn't re-derive it.
+5. If you had to discover the procedure rather than read it, offer to record it (in the repo's `CLAUDE.md` / `AGENTS.md` or a `RELEASING.md`) so the next release doesn't re-derive it.
 
 Match each version-bearing file's existing format; never guess it.
 
@@ -159,7 +159,7 @@ Present a structured summary to the user:
 
 ### Documentation
 - [x] README.md up to date
-- [x] CLAUDE.md accurate
+- [x] CLAUDE.md / AGENTS.md accurate
 - [ ] Updated API docs to match new endpoint
 
 ### Architecture Diagram
