@@ -151,7 +151,7 @@ For each finding: record file path, line number, pattern matched, severity, and 
 
 Explore the project to understand its documentation surface:
 
-- Read `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, and any documentation config (mkdocs.yml, docusaurus.config.js, conf.py, etc.)
+- Read `CLAUDE.md`, `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, and any documentation config (mkdocs.yml, docusaurus.config.js, conf.py, etc.)
 - Inventory all documentation files by type (md, rst, adoc, ipynb, inline docstrings)
 - Identify the documentation tech stack (Sphinx, MkDocs, Docusaurus, plain markdown, etc.)
 - Map **audiences**: who reads these docs? (first-time user, regular developer, contributor, operator/admin)

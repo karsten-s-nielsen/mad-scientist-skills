@@ -1,6 +1,6 @@
 ---
 name: measure-before-optimize
-description: Pre-change measurement gate for perf-sensitive functions. Use BEFORE modifying any function that has a pytest-benchmark test, appears in a performance baselines file, or is flagged as a hot path in CLAUDE.md. Captures baseline median and p95, verifies the change does not regress beyond a configurable threshold, reports the delta. Peer skill to optimization-audit — this one is pre-change; that one is retrospective.
+description: Pre-change measurement gate for perf-sensitive functions. Use BEFORE modifying any function that has a pytest-benchmark test, appears in a performance baselines file, or is flagged as a hot path in CLAUDE.md / AGENTS.md. Captures baseline median and p95, verifies the change does not regress beyond a configurable threshold, reports the delta. Peer skill to optimization-audit — this one is pre-change; that one is retrospective.
 ---
 
 # Measure Before Optimize
@@ -11,7 +11,7 @@ A pre-change measurement discipline that captures a performance baseline, gates 
 
 - Before modifying a function that has a `pytest-benchmark` test.
 - Before modifying a function listed in the project's performance baselines file (commonly `docs/performance-baselines.md` or `docs/benchmarks.md`).
-- Before modifying a function flagged as a hot path in `CLAUDE.md`, `CONTRIBUTING.md`, or a performance-related document.
+- Before modifying a function flagged as a hot path in `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, or a performance-related document.
 - When the user says "optimize X", "speed up Y", "this function is slow", or similar performance-intent phrases.
 - When a task touches tracking-scale data, Spark UDFs with strict memory budgets, or any code in a documented hot loop.
 
@@ -51,7 +51,7 @@ Parse the JSON output. For each benchmark in `benchmarks[]`:
 - `stats.rounds`
 - `stats.ops`
 
-Look up the function's budget from the project's CLAUDE.md or baselines file if available.
+Look up the function's budget from the project's CLAUDE.md / AGENTS.md or baselines file if available.
 
 Report to the user:
 
@@ -141,7 +141,7 @@ Baseline captured — compute_pitch_control_at_points
   median:   347 µs
   p95:      512 µs
   rounds:   3
-  budget:   ≤5 ms (from CLAUDE.md Performance Budgets)
+  budget:   ≤5 ms (from CLAUDE.md / AGENTS.md Performance Budgets)
   headroom: 93.1% of budget
 ```
 

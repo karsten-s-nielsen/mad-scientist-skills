@@ -119,7 +119,7 @@ Explore the project to understand its architectural surface:
   - Internal dependency direction: which packages import from which?
   - Configuration management: how are settings, feature flags, and environment-specific values handled?
   - Test structure: how are tests organized relative to source? Unit vs integration separation?
-- Identify the **intended architecture** (from docs, CLAUDE.md, naming conventions, or team conventions):
+- Identify the **intended architecture** (from docs, CLAUDE.md / AGENTS.md, naming conventions, or team conventions):
   - Is there a stated architectural pattern? (hexagonal, layered, clean, modular monolith, microservices, pipeline/medallion)
   - Are there stated layer rules? ("workflows has zero Spark imports", "domain never imports infrastructure")
   - Are there boundary enforcement mechanisms? (import linting, module structure, CI checks)
@@ -456,7 +456,7 @@ For projects deploying to multiple targets with different runtime constraints (s
 
 | Check | What to look for | Severity |
 |-------|-----------------|----------|
-| Constraint documentation | Are per-target runtime constraints (memory limits, CPU, network access, filesystem access, available libraries, execution timeouts) documented in CLAUDE.md, ADRs, or deployment docs? For multi-target projects, a table mapping target → constraints is the minimum | Medium (if >2 targets and no documentation) |
+| Constraint documentation | Are per-target runtime constraints (memory limits, CPU, network access, filesystem access, available libraries, execution timeouts) documented in CLAUDE.md / AGENTS.md, ADRs, or deployment docs? For multi-target projects, a table mapping target → constraints is the minimum | Medium (if >2 targets and no documentation) |
 | Code-constraint alignment | Does the code structure account for documented constraints? E.g., if UDF executors have a 1 GB memory limit, are group sizes bounded? If serverless has no internet, do UDF bodies avoid HTTP calls? If a container has 16 GB RAM, are datasets verified to fit before loading? | High (if code violates documented constraints) |
 | Constraint propagation | When a function is shared across deployment targets with different constraints, does the code degrade gracefully or fail fast when a constraint is hit? Or does it silently OOM / timeout / hang? | Medium |
 
@@ -487,12 +487,12 @@ Evaluate whether significant architectural decisions are documented and whether 
 
 | Check | What to look for | Severity |
 |-------|-----------------|----------|
-| ADR existence | Are there any architectural decision records? (`docs/decisions/`, `docs/adr/`, ADR sections in README or CLAUDE.md) | Medium (if significant decisions exist undocumented) |
-| Decision-code alignment | For each documented decision: does the code match? If CLAUDE.md says "workflows has zero Spark imports" — verify this is true | High (if code contradicts documented decisions) |
+| ADR existence | Are there any architectural decision records? (`docs/decisions/`, `docs/adr/`, ADR sections in README, CLAUDE.md, or AGENTS.md) | Medium (if significant decisions exist undocumented) |
+| Decision-code alignment | For each documented decision: does the code match? If CLAUDE.md / AGENTS.md says "workflows has zero Spark imports" — verify this is true | High (if code contradicts documented decisions) |
 | Undocumented significant decisions | Are there architectural choices (technology selection, pattern adoption, boundary placement) that are not documented anywhere? | Medium |
 | Superseded decisions | Are there ADRs or documented decisions that have been superseded by later code changes without updating the documentation? | Medium |
 | Decision rationale | Do documented decisions include the "why" (context, constraints, trade-offs), not just the "what"? A decision without rationale cannot be evaluated when circumstances change | Low |
-| CLAUDE.md as ADR source | Many projects encode architectural decisions in CLAUDE.md or similar AI-assistant context files. These should be treated as authoritative ADRs and validated against the code | High (if CLAUDE.md contradicts code) |
+| CLAUDE.md / AGENTS.md as ADR source | Many projects encode architectural decisions in CLAUDE.md / AGENTS.md or similar AI-assistant context files. These should be treated as authoritative ADRs and validated against the code | High (if CLAUDE.md / AGENTS.md contradicts code) |
 
 **Output:** ADR coverage assessment with documented decisions, undocumented decisions, and decision-code alignment findings.
 
