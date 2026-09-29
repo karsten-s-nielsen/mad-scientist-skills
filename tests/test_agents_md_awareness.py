@@ -1,6 +1,6 @@
 """Guard: audit/review skills treat CLAUDE.md and AGENTS.md as a pair.
 
-Two contracts (spec docs/plans/2026-09-25-agents-md-alignment-design.md §5):
+Two contracts (spec docs/specs/2026-09-25-agents-md-alignment-design.md §5):
   5.1  Every SKILL.md read-list line naming CLAUDE.md must also name AGENTS.md.
   5.2  Every line under plugins/**/*.md naming CLAUDE.md must also name AGENTS.md,
        except explicitly allow-listed lines.

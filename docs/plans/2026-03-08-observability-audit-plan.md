@@ -8,7 +8,7 @@
 
 **Tech Stack:** Markdown skill files, grep patterns for anti-pattern detection, framework-specific configuration references for OTel, logging, metrics, tracing, and alerting.
 
-**Design doc:** `docs/plans/2026-03-08-observability-audit-design.md`
+**Design doc:** `docs/specs/2026-03-08-observability-audit-design.md`
 
 **Reference implementation:** `plugins/mad-scientist-skills/skills/security-audit/` (same directory structure, same tier/mode/phase conventions)
 
