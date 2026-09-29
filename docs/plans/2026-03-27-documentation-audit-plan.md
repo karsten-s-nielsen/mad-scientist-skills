@@ -51,7 +51,7 @@ Write the first ~120 lines of SKILL.md covering:
 
 The frontmatter `description` field must include all trigger phrases and framework names so Claude Code's skill matcher can find it. Follow the pattern from cognitive-interface-audit SKILL.md lines 1-3.
 
-Reference the design spec at `docs/plans/2026-03-27-documentation-audit-design.md` for the exact content of each section.
+Reference the design spec at `docs/specs/2026-03-27-documentation-audit-design.md` for the exact content of each section.
 
 - [ ] **Step 3: Commit**
 

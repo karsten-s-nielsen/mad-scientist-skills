@@ -8,7 +8,7 @@
 
 **Tech Stack:** Markdown skill files; JSON manifests; Structurizr DSL + the `c4` skill for the diagram; `pre-commit` (end-of-file-fixer, trailing-whitespace, check-merge-conflict, check-added-large-files, check-json, detect-secrets); `pytest`.
 
-**Companion design:** `docs/plans/2026-08-28-unbiased-review-skill-design.md` (the *what/why*; this is the *how*).
+**Companion design:** `docs/specs/2026-08-28-unbiased-review-skill-design.md` (the *what/why*; this is the *how*).
 
 ## Global Constraints
 

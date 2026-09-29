@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **repo** — split `docs/plans/` into `docs/specs/` (design + `-research.md` docs) and `docs/plans/` (`-plan.md`), with `docs/adrs/` unchanged, so the three planning-doc types are structurally distinct and a design doc no longer sits in a folder named "plans". Six docs moved via `git mv` (history-preserving); the staying plans' design-doc cross-references, the `optimization-audit` doc-scan table, the `.gitignore` comment, and the `test_agents_md_awareness` docstring were repointed. A guard test (`tests/test_docs_layout.py`) prevents regression. `docs/superpowers/` stays gitignored scratch. Docs are not in the shipped payload, so this carries no version bump. See `ADR-003`.
+
 ## [1.26.0] - 2026-08-29
 
 ### Added

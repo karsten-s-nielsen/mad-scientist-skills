@@ -280,6 +280,7 @@ Search for these files (case-insensitive) in the project root and `docs/` direct
 | `PLAN.md` | Implementation plans with performance decisions |
 | `TECH_DEBT.md`, `DEBT.md` | Explicit tech debt tracking |
 | `CHANGELOG.md` | Recent performance-related changes |
+| `docs/specs/*.md` | Design/spec docs and research notes |
 | `docs/plans/*.md` | Phase-specific implementation plans |
 | `CLAUDE.md`, `AGENTS.md` | May contain performance standards and budgets |
 

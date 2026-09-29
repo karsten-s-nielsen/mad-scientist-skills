@@ -8,7 +8,7 @@
 
 **Tech Stack:** Markdown (skill content), Python stdlib (`pathlib`, `re`) + pytest for the guard. No new dependencies.
 
-**Spec:** `docs/plans/2026-09-25-agents-md-alignment-design.md`
+**Spec:** `docs/specs/2026-09-25-agents-md-alignment-design.md`
 
 ## Global Constraints
 
@@ -68,7 +68,7 @@ Expected: on a clean `feat/agents-md-alignment` off `9a10754`. No worktree.
 ```python
 """Guard: audit/review skills treat CLAUDE.md and AGENTS.md as a pair.
 
-Two contracts (spec docs/plans/2026-09-25-agents-md-alignment-design.md §5):
+Two contracts (spec docs/specs/2026-09-25-agents-md-alignment-design.md §5):
   5.1  Every SKILL.md read-list line naming CLAUDE.md must also name AGENTS.md.
   5.2  Every line under plugins/**/*.md naming CLAUDE.md must also name AGENTS.md,
        except explicitly allow-listed lines.
@@ -333,7 +333,7 @@ Do NOT run `git commit` until the maintainer says yes to this specific commit. "
 - [ ] **Step 5: Single commit (only after approval)**
 
 ```bash
-git add docs/plans/2026-09-25-agents-md-alignment-design.md \
+git add docs/specs/2026-09-25-agents-md-alignment-design.md \
         docs/plans/2026-09-25-agents-md-alignment-plan.md \
         tests/test_agents_md_awareness.py \
         AGENTS.md CLAUDE.md \

@@ -24,9 +24,9 @@
 - **ROI column** in findings — effort vs impact estimation
 - **Beta label** in title, frontmatter description, and README
 
-**Research reference:** `docs/plans/2026-03-08-optimization-audit-research.md` — 20 categories with complete grep patterns, tools, and metrics
+**Research reference:** `docs/specs/2026-03-08-optimization-audit-research.md` — 20 categories with complete grep patterns, tools, and metrics
 
-**Design reference:** `docs/plans/2026-03-08-optimization-audit-design.md` — approved phase structure, templates, severity classification
+**Design reference:** `docs/specs/2026-03-08-optimization-audit-design.md` — approved phase structure, templates, severity classification
 
 ---
 

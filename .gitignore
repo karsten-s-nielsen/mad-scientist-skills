@@ -23,6 +23,6 @@ __pycache__/
 
 # Superpowers plugin working notes (brainstorming plans and specs). Session
 # scratch, not project documentation — nothing under this path has ever been
-# committed. Deliberately narrower than `docs/`: `docs/plans/` and `docs/adrs/`
-# are tracked project history and must stay that way.
+# committed. Deliberately narrower than `docs/`: `docs/specs/`, `docs/plans/`
+# and `docs/adrs/` are tracked project history and must stay that way.
 docs/superpowers/
