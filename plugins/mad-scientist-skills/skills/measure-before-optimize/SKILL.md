@@ -22,6 +22,8 @@ A pre-change measurement discipline that captures a performance baseline, gates 
 - Micro-benchmarks of framework internals that you do not own.
 - Production profiling — this skill runs local micro-benchmarks only, not production traces.
 
+**Timing is necessary, not sufficient.** MBO gates *did it get slower*. For a **numeric** function, a pre-change gate should also capture an **output snapshot** (representative inputs → outputs) so the post-change check can confirm *the numbers did not move*, not only the timing. Capture the snapshot here; defer the equality/oracle discipline to `optimization-audit/templates/equivalence-verification.md`. A speedup that silently changed the output is not an optimization (see `optimization-audit` ADR-004).
+
 ## Workflow
 
 ### Phase 1: Identify the measurement surface

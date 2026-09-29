@@ -518,6 +518,15 @@ Before adding a cache:
 
 ---
 
+## Cache immutability & identity-keyed staleness (P6)
+
+Two failure modes that a bounded, correctly-invalidated cache still allows:
+
+- **Return immutable or defensively copied.** A shared cached object handed back to callers must be **immutable** or **defensively copied** — returning a mutable shared object invites cross-caller corruption (one caller mutates it, every other caller sees the change). Copy **only** at the point an external API demands a mutable buffer, not preemptively — a preemptive copy on every read defeats the cache. In numpy, mark the cached array **read-only** (`arr.flags.writeable = False`) so a mutation fails loud rather than corrupting silently.
+- **Never serve a modified-content path by its original identity.** A cache keyed on an **identity** (a frame id, a row key, an object id) serves a **stale/wrong** value when a caller passes *modified* content under that same identity. Any what-if / counterfactual / "modified input" path must be scored on its **own content**, never re-fetched by the original key. Prefer a **structural** guarantee — assert the modification is real, refuse a mismatched reuse — over a comment or convention.
+
+*» e.g.* a cached filter-design array was returned `writeable=False` and copied only immediately before the one external call needing a mutable buffer; separately, a batched scorer scored a "keeper-removed" counterfactual over *explicit* content slices, never a frame-id re-fetch, and a later design made the mistake **structurally impossible** by asserting the derived-vs-original diff.
+
 ## Best Practices
 
 - Start with L1 (in-process) caching for the highest-traffic, lowest-latency wins before adding distributed layers

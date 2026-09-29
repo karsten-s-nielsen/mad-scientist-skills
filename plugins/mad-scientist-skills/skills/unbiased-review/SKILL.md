@@ -97,6 +97,12 @@ only execution can settle it, use the isolation protocol.
 Keep the tally. A report that says "20 of 23 exact, these 2 wrong" is credible in a way that a bare
 defect list is not — and it tells the author which parts of their document you actually leaned on.
 
+When the artifact claims a **byte-identical** / **no-flip** optimization, verify two things
+specifically: (a) the parity/oracle gate ran at **production scale**, not a smoke sample; and (b) any
+behavior-changing part was **separated out** with its own record (its own commit/ADR/test), not
+folded into the "byte-identical" work. A correctness fix cannot be byte-identical (mirrors
+`optimization-audit` ADR-004 / P19).
+
 ### Phase 3 — Rubric passes
 
 TDD, hexagonal, long-term durability, scope/YAGNI, internal consistency, and non-goal challenge.

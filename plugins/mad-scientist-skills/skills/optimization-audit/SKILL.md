@@ -36,7 +36,7 @@ Determine which mode to operate in based on the project state:
 | Source code and/or infrastructure files exist | **Audit** | Concrete artifacts to analyze |
 | Both code and a request to "plan performance" | **Both** | Run planning phases on architecture, audit phases on code |
 
-When in doubt, ask the user. If both modes apply, run all 14 phases.
+When in doubt, ask the user. If both modes apply, run all applicable phases (0–13, plus conditional 0.5 and 11.5).
 
 ## Severity classification
 
@@ -51,9 +51,9 @@ Every finding must be assigned a severity:
 
 ## Audit process
 
-Execute all applicable phases in order. Skip phases marked for a mode you are not running. Skip conditional phases (8, 9, 10, 11) when their preconditions are not met. Do NOT skip applicable phases. Do NOT claim completion without evidence.
+Execute all applicable phases in order. Skip phases marked for a mode you are not running. Skip conditional phases (8, 9, 10, 11, 11.5) when their preconditions are not met. Do NOT skip applicable phases. Do NOT claim completion without evidence.
 
-**Phase order:** 0 → 0.5 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13
+**Phase order:** 0 → 0.5 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 11.5 → 12 → 13
 
 **Before starting, read the "Important rules" section at the bottom of this document.** Two rules in particular shape how you run the audit:
 
@@ -248,6 +248,8 @@ A function called inside a loop where some or all of its arguments are constant 
 
 **Audit instruction:** For every loop over a large collection (tracking frames, event sequences, batch items), inspect every function call in the loop body and classify each argument as loop-varying or loop-invariant. If a called function accepts M arguments and K ≥ 1 are invariant, flag the call and recommend restructuring to compute the invariant factor once. Pay particular attention to multiplication chains (e.g., `ppcf * grid_A * grid_B` where `grid_A * grid_B` is a constant tensor) and to any function that loads, parses, or constructs data structures from non-varying inputs.
 
+**Detection D1 (expensive setup hidden in a library call):** the invariant work is often *inside* a library call `f(design, item)` — a filter design, query plan, compiled regex, connection, allocated buffer, or model load — so it does not read as a naked loop-invariant. Flag a call in a loop whose argument is invariant **and** whose setup is known-expensive (design/compile/connect/allocate/load), and confirm in Phase 12 with the profiling cue: a `tottime` hotspot inside a setup function whose **call count ≫ distinct-input count**. Lands via P6 (cache the setup read-only, bounded key).
+
 #### Logging overhead anti-patterns
 
 | Language | Pattern | Issue | Severity |
@@ -258,6 +260,30 @@ A function called inside a loop where some or all of its arguments are constant 
 | Any | `log\.\w+\(` inside `for\|while\|each` (high-iteration loop body) | Per-iteration logging overhead | High |
 | Config | `level.*DEBUG\|level.*TRACE\|LOG_LEVEL.*debug` in production config | Debug logging in production | High |
 | Python | `traceback\.print_exc\(\)\|traceback\.format_exc\(\)` for handled exceptions | Unnecessary stack trace | Medium |
+
+#### Wide-copy / over-fetch anti-patterns (detection D3)
+
+Extends the `SELECT *` over-fetch checks (see the ORM row in the Algorithm category above) to the dataframe / in-memory angle: a full-width copy immediately before only a few fields are read. Trivially output-preserving, but it adds up across many slices. The grep is coarse — a full copy is often legitimate — so severity is Low/context: confirm a **narrow read follows** the wide copy before flagging.
+
+| Language | Pattern | Issue | Severity |
+|----------|---------|-------|----------|
+| Python/pandas | `\.copy\(\)` | Wide copy then narrow read — select the needed columns before copying (detection D3) | Low |
+
+#### Silent degradation on env/version change (hazard P7)
+
+A dependency/runtime upgrade can flip an assumption the code relies on (mutability / copy-on-write, a default, precision, ordering, nullability). Code that performs the affected operation inside a `try/except` that catches the resulting error and **warns-and-continues** silently skips the functionality that operation implemented — no crash, a wrong answer that passes review because "nothing broke". A golden frozen *before* the upgrade cannot catch it. Treat a warning-based fallback on a **correctness-relevant** path as a bug, not a feature (warn-and-skip is acceptable only for genuinely optional enhancements).
+
+| Language | Pattern | Issue | Severity |
+|----------|---------|-------|----------|
+| Python | `except[^\n]*:\s*\n\s*warnings\.warn` | Silent degradation on env/version change — catch-and-continue around a mutation; warn-and-skip on a correctness path is a bug (hazard P7) | High |
+
+#### Optimization without a parity test (hazard P2)
+
+A recompute-shape change (vectorize / batch / parallelize / JIT) that ships without an oracle/parity test is a "faster but maybe wrong" risk. This is **grep-surfaces-candidate + structural-confirm** (like the Ingestion no-op category): the grep flags the recompute-shape marker; a **structural** step then checks whether a corresponding parity/oracle test exists in the test suite before flagging. On a confirmed hit, require the discipline in `templates/equivalence-verification.md`.
+
+| Language | Pattern | Issue | Severity |
+|----------|---------|-------|----------|
+| Python | `np\.vectorize\|numba\|vmap\|@guvectorize` | Optimization without a parity test — a recompute-shape change lacking an oracle test; confirm structurally (does a parity test exist?), then require `equivalence-verification.md` (hazard P2) | Medium |
 
 For each finding: record file path, line number, pattern matched, category, severity, and whether it is a true positive or intentional usage.
 
@@ -358,6 +384,7 @@ Explore the project to understand its performance surface:
   - Frontend assets: JS bundles, CSS, images, CDN configuration
   - Infrastructure-as-code: Terraform, CloudFormation, Pulumi, Kubernetes manifests
   - Profiling and benchmarking tooling: existing load tests, profilers, performance budgets
+- **Consumer enumeration (P8 — blast radius).** For any optimization to shared or hot-path code, enumerate **every consumer** of that code and validate the change across all of them before it lands — the blast radius is the consumer set, not the function you are editing. A behavior-changing finding (even a provably-correct fix) gets its **own durable record** (ADR/changelog) distinct from the perf commit.
 
 **Output:** A performance surface summary listing all services, data stores, deployment model, workload profile, and performance-sensitive paths.
 
@@ -381,6 +408,10 @@ Load `templates/algorithm-complexity.md` for the full Big-O reference with per-l
 | Redundant traversals | Multiple passes over same collection that could merge into one | Low |
 | Missing early termination | Loops that continue after the answer is found | Low |
 | Quadratic string operations | Regex compilation inside loops, repeated `in` checks on lists | Medium |
+
+#### Same-transform-same-source recompute (detection D2)
+
+**Structural analysis — not just grep:** the same derived input recomputed per consumer instead of once per group. Two or more features/stages derive from the **same source** via the **same transform**, each computing it independently. The duplication is across *different modules/features*, not in one loop, so no single file looks wrong. Detect the same transform applied to the same source in ≥2 sites (identical resample/parse/normalize/join on the same input key across separate code paths); recommend computing it once per larger unit of work and sharing the intermediate. Lands via P2 (an equivalence oracle on the shared intermediate).
 
 #### Grep patterns
 
@@ -575,6 +606,8 @@ Load `templates/caching-strategies.md` for the full caching reference with 5-lay
 | CDN configuration | Static assets and cacheable API responses not served from CDN | Medium |
 | Multi-layer caching | Missing L1 (in-process) + L2 (distributed) for high-traffic paths | Low |
 | Cache warming | Cold start after deployment with no pre-warming strategy | Low |
+| Cached object mutability (P6) | A shared cached object returned **mutable** — not read-only or defensively copied — so one caller's mutation corrupts every other caller. Mark it read-only (`writeable = False`) or copy only at the external boundary that needs it. See `caching-strategies.md` "Cache immutability & identity-keyed staleness" | High |
+| Identity-keyed cache staleness (P6) | A what-if / counterfactual / modified-input path re-fetched by its **original identity key**, serving stale content instead of scoring its own content. Prefer a structural guarantee over a comment | High |
 
 #### Grep patterns
 
@@ -891,11 +924,25 @@ Load `templates/cloud-cost-optimization.md` for the full cloud cost reference wi
 
 ---
 
-### Phase 12: Profiling & Benchmarking Posture (Both modes)
+### Phase 11.5: Numeric Reproducibility & Determinism (Audit mode) — CONDITIONAL
+
+**Only run this phase if the codebase performs floating-point reductions, uses BLAS/LAPACK/FFT or compiled numeric kernels (numba, Cython, C extensions, GPU), or ships numeric goldens.** Skip it entirely otherwise — a web backend, a SQL pipeline, or a string-processing service has nothing here.
+
+Load `templates/numeric-reproducibility.md` for the full reference. The core hazard: a numeric result can differ across CPUs, across SIMD/GPU code paths, and across library versions even with "the same" source, because reordering a floating-point reduction or letting hardware/library dispatch pick a fused path changes the result bits. Any bit-identity claim must be scoped to the environment where it was verified, or the reference redefined so no dispatcher can vary it.
+
+**Output:** Numeric-reproducibility findings — reduction-order hazards, dispatched-fused-op portability claims, un-fenced library-version drift, and any redefine-the-reference decision.
+
+---
+
+### Phase 12: Profiling, Benchmarking & Equivalence Posture (Both modes)
 
 Evaluate the maturity of performance testing, regression detection, and profiling practices.
 
 Load `templates/profiling-benchmarking.md` for the full profiling and benchmarking reference with per-language profiling tools, load testing methodology, and performance budget patterns.
+
+#### Equivalence posture (output-preserving optimizations)
+
+Load `templates/equivalence-verification.md`. Any change that alters *how* a result is computed — vectorize, batch, parallelize, cache, memoize, swap algorithm, JIT — must prove it yields the **same** result, not merely a faster one. Speed is necessary, never sufficient, evidence that an optimization is correct. Checks: an **oracle** test (the pre-optimization implementation kept test-only) compared over a battery **at production scale**; a whole-output final compare with the equality the contract demands (**bitwise** for exactness; a stated, tested tolerance otherwise); **mutation**-verify the oracle both directions; **probe**-first for platform-dependent numeric identities. A "performance" change that reduces output fidelity with no recorded approval is a governance finding (see Phase 13 and Important Rules), not an optimization.
 
 **Planning mode:** Design the performance testing strategy:
 - What performance baselines need to be established? (latency targets, throughput targets)
@@ -960,6 +1007,20 @@ A codebase can have many benchmarks and still be blind to the layer that regress
    - **One or two layers over-represented** while the regressing layer has zero coverage = explicitly call out the blind spot in the Phase 13 report.
 
 **Why this matters:** the most common failure mode of benchmark-heavy codebases is to heavily instrument the layer the original engineer found interesting (usually L1 compute) while leaving the layer that actually regresses in production (usually L2 query or L4 UI) completely unmeasured. Enumerate first; judge second.
+
+#### Measurement rigor
+
+Before trusting any speedup number, apply these — most are one-line habits that catch a wrong conclusion:
+
+- **Fixed-cost floor (P9, run first).** For a per-item budget with a variable inner count (draws, iterations, rows, retries), measure the **`count=0`** floor first. If the setup/fixed cost already exceeds the budget, no inner-loop optimization can close the gap — the fixed cost is the real target (or the budget's granularity is wrong, see P11). This is detection cue **D5**.
+- **Warm-vs-cold (P10).** A JIT/compiled/warm-cache benchmark must state whether it includes first-call compilation / cold-cache; force an eager **warm**-up before timing, or report cold and warm separately.
+- **Budget-granularity (P11).** When a per-item budget can't be met by optimization alone, search the spec/plan for an already-approved **coarser** bound (corpus-level, throughput, SLA) the current numbers satisfy *before* proposing any scope cut — the "miss" may be against the wrong granularity.
+- **Structural op-count guards (P12).** Pair every "we eliminated N redundant calls/recomputations" claim with an **op-count** assertion (a counter/spy), not only a wall-clock benchmark — wall-clock (±~10% run-to-run) cannot distinguish "eliminated the waste" from "same waste, warmer cache / faster hardware".
+- **Instrumentation no-op (P13).** Whenever timers/counters are added to production code, require a test that the computed result is **identical with instrumentation on vs off** (couples to P12's counters).
+- **Noise floor (P15).** A report must state its run-to-run spread; a reported improvement smaller than the measured **noise floor** is not a win without repeated-run evidence. Control before/after for machine load, or footnote the confound.
+- **Structural shape inventory (P17).** Produce a cheap counts/sizes/eligibility **shape inventory** of the actual corpus before optimizing — it explains *why* a stage costs what it does and prevents over-fitting an optimization to one input's shape.
+- **Profiling posture (P18).** Require both `tottime` (per-call) and cumulative views. A `tottime` hotspot inside a *library* function is a signal to find a cacheable/reusable **design input** (detection cue **D1**), not to rewrite the caller's algorithm. Detection cue **D4**: a huge call count to one function with high per-call / low per-element cost → look for a **batched 2-D shape** or a specialized path before an algorithmic rewrite.
+- **Eroded-guard detection (D6).** A scale/complexity guard that is green may have silently stopped discriminating. Periodically **run the known-broken shim** the guard is meant to reject and confirm it still fails; flag a collapsed separation margin. The fix (shared threshold constant; a wide-enough size-ladder) is P23/P24 in `templates/algorithm-complexity.md`.
 
 **Output:** Profiling and benchmarking posture assessment with gaps and recommended tooling, **including the stack-layer coverage table and an explicit call-out of the lowest-covered layer that sits on a user-facing path.**
 
@@ -1064,6 +1125,7 @@ Present concrete findings with fix status and ROI estimates:
 | Phase 9: Pipelines (if applicable) | [X checks] | [Y findings] | [summary] |
 | Phase 10: Containers (if applicable) | [X checks] | [Y findings] | [summary] |
 | Phase 11: Cloud Cost (if applicable) | [X checks] | [Y findings] | [summary] |
+| Phase 11.5: Numeric Reproducibility (if applicable) | [X checks] | [Y findings] | [summary] |
 | Phase 12: Profiling Posture | [X checks] | [Y findings] | [summary] |
 
 ### Optimization Maturity Rating
@@ -1083,6 +1145,25 @@ If the project's ROADMAP or planning docs describe optimization strategies not y
 |----------|--------|-------------------|
 | Example: 5-layer caching architecture | ROADMAP.md | Explains why L2/L3 caching is absent (planned, not overlooked) |
 
+### Optimization vs Scope-Decision Classification
+Every performance finding is classified into exactly one bucket:
+- **Optimization (output-preserving):** changes only *how* a result is computed (batch, vectorize, parallelize, cache, memoize, swap algorithm, JIT). Shipped behind an equivalence gate (Phase 12 / `equivalence-verification.md`); no product sign-off needed because the output is provably unchanged.
+- **Scope / method change:** changes *what* is computed (fewer samples/iterations/draws, lower resolution/precision, narrower coverage, dropped retries, an approximation). A **product decision requiring explicit human sign-off**, reported as a decision — never folded into a "performance" commit or laundered as an optimization.
+
+| # | Finding | Classification | Equivalence gate / approval |
+|---|---------|----------------|-----------------------------|
+| 1 | Vectorized hot-path kernel | optimization | Bitwise oracle at production scale — passes |
+| 2 | Reduce surrogate draws 1000→200 to hit budget | scope-decision | Needs owner sign-off — reported, not implemented |
+
+A "performance" change that reduces output fidelity with no recorded approval is itself a **finding**.
+
+### Regressions / trade-offs accepted
+Any fidelity reduction or regression introduced as a side effect of an optimization is called out here **with the reason it is acceptable** — silence on a regression is a red flag even when the primary path improved. The Executive Summary must not net a fidelity loss into a speed gain. A behavior-changing finding (even a provably-correct fix) needs its own durable record (ADR/changelog), and the as-built code is diffed against its approved plan/spec — an unrecorded deviation is a finding requiring a ruling (P8/P19/P20).
+
+| # | Regression / trade-off | Reason accepted | Recorded in |
+|---|------------------------|-----------------|-------------|
+| 1 | Non-primary reference leg ~2.3× slower | The compiled path is the production configuration; the pure-reference leg runs only in tests | ADR + changelog |
+
 ### Ready for production: Yes / No (with blockers)
 ```
 
@@ -1099,8 +1180,11 @@ If the project's ROADMAP or planning docs describe optimization strategies not y
 - **Verify fixes.** After fixing a performance issue, re-run the check that found it to confirm the fix works.
 - **Respect existing patterns.** If the project has established performance patterns, extend them rather than introducing new ones.
 - **Check that workarounds still win.** For every project-level "never do X" rule (`SELECT DISTINCT`, `.toPandas()`, `iterrows()`, `df.cache()`, etc.), identify the codebase's chosen workaround (recursive CTE, `.limit().toPandas()`, `itertuples()`, Delta temp tables, etc.) and verify it is still faster than the forbidden pattern **at the current data scale**. Rules that made sense at 100K rows can invert at 10M rows; a recursive CTE doing N inner `SELECT MIN` subqueries will lose to `SELECT DISTINCT col` with a covering index once N grows large enough. If the workaround has become its own anti-pattern, flag it as a finding and recommend reverting to the previously forbidden pattern (with the missing index or other enabling change). This applies to any rule inherited from CLAUDE.md / AGENTS.md, ADRs, style guides, or comments — do not assume the rule still holds; verify.
-- **Conditional phases.** Phase 8 (Frontend) only if frontend code exists. Phase 9 (Pipeline) only if pipeline tools detected. Phase 10 (Container) only if Dockerfiles/K8s exist. Phase 11 (Cloud Cost) only if IaC/cloud config exists. Skip irrelevant phases to keep signal-to-noise high.
+- **Conditional phases.** Phase 8 (Frontend) only if frontend code exists. Phase 9 (Pipeline) only if pipeline tools detected. Phase 10 (Container) only if Dockerfiles/K8s exist. Phase 11 (Cloud Cost) only if IaC/cloud config exists. Phase 11.5 (Numeric Reproducibility) only if the codebase performs floating-point reductions, uses BLAS/LAPACK/FFT or compiled numeric kernels, or ships numeric goldens. Skip irrelevant phases to keep signal-to-noise high.
 - **Scope awareness.** Don't flag managed-service built-in optimization as a finding (e.g., auto-scaling managed by a PaaS).
 - **Single tier.** There is no Standard/Enterprise split. All checks are actionable with free/open-source tools.
 - **Prioritize.** Fix Critical and High findings. Track Medium and Low in the backlog. Don't let perfect be the enemy of fast.
+- **Output-preserving optimizations (ADR-004).** An optimization must be **output-preserving**; changing *what* is computed is a **scope decision** requiring explicit human sign-off, and must never be laundered as a performance change. Classify every finding as `optimization` (gated by an equivalence check — Phase 12 / `equivalence-verification.md`) or `scope-decision` (needs approval). A fidelity reduction with no recorded approval is itself a finding.
+- **A correctness fix found during perf work gets its own cycle.** Flag any perf report that folds a **correctness fix** into a "byte-identical" optimization commit/gate. A correctness fix needs its own test-first cycle, its own before/after impact quantification (not just a bug description), and its own sign-off — it cannot be "byte-identical" if it fixes a bug.
+- **Diff as-built against the approved plan/spec.** An optimization audit compares the code to its own approved plan, not just "does it work." An **as-built** deviation from the approved plan is a finding requiring a ruling, whether or not it happens to be behavior-preserving.
 - **Parallelize for large codebases.** On repos with ≥5K Python / JS / Go files or ≥50 modules, dispatch independent phases to parallel explorer sub-agents with explicit, non-overlapping file-set scopes — typical split: (a) Phase 0.5 docs + tech debt, (b) Phase 5 database/query, (c) Phases 6 + 8 cache + frontend, (d) Phase 9 pipeline + dbt, (e) Phases 0 + 2 + 3 + 4 + 7 grep-wide anti-patterns. Keep Phases 10, 11, 12 in the main thread — they are typically small and integrate directly into Phase 13. When parallelizing, brief each agent with the exact file globs or directory roots to scan so two agents never read the same file, and require each to produce a severity-tagged findings table so the main thread can merge them mechanically. Single-shot `Read`+`Grep` in the main thread is correct for small codebases (<1K files) or targeted audits — parallelization is overhead-positive only when the codebase is large enough that a single-threaded read would exhaust the main context.

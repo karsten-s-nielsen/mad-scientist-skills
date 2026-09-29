@@ -37,6 +37,7 @@ Review all source code as a professional software architect:
 - **Type safety**: Missing types, `any` usage, incomplete interfaces
 - **Dependencies**: Unused dependencies, outdated versions with known vulnerabilities
 - **Tests**: Coverage gaps, missing edge cases, outdated test assertions
+- **Optimization claims**: if a change claims a byte-identical / no-flip optimization, confirm the parity/oracle gate ran at **production scale** (not a smoke sample) and any behavior-changing part was separated out with its own record — a correctness fix cannot be byte-identical (mirrors `optimization-audit` P19 / ADR-004)
 
 For deeper analysis, run the specialized audit skills from this plugin:
 

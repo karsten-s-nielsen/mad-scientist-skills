@@ -566,6 +566,16 @@ df["clean_name"] = df["name"].str.strip().str.lower().str.replace(" ", "_", rege
 
 ---
 
+## Guard authoring — scale/complexity guards that keep discriminating
+
+A test that asserts an algorithm's growth (an O(n) vs O(n²) guard, an anti-rot check, a liveness gate) is only useful while it can still fail for the regression it exists for.
+
+- **P23 — one named threshold constant.** A guard and its "does-the-guard-work" companion test must share **one named threshold constant**, not two independent literals that can drift apart. If the guard says `assert exponent < GATE` and its self-test hard-codes `1.5`, a later tweak to one leaves the other stale.
+- **P24 — a wide-enough size-ladder.** A scale guard's size ladder must be large enough for the asserted growth term to **dominate** before the threshold is tightened. When a known-broken shim barely fails/passes, fix the **ladder**, not just the threshold — measure where the higher-order term dominates.
+  - *» e.g.* on a `(8, 16, 32)` ladder a broken O(n²) shim measured exponent 1.486 (under a 1.5 gate = false pass); moving to `(16, 32, 64)` put the shim at 1.649 vs the real 1.000, cleanly separated by a 1.2 gate. "The ladder, not only the threshold, carries the separation."
+
+The **detection** half — periodically running that known-broken shim to confirm the guard still fails — lives in `optimization-audit/SKILL.md` Phase 12 (cue D6).
+
 ## Complexity Analysis Checklist
 
 Systematic approach for reviewing hot paths during Phase 2.
