@@ -7,9 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.27.0] - 2026-09-29
+
+### Added
+
+- **`optimization-audit`** — a **detection catalog** (D1–D6) that flags optimization opportunities on a first pass: expensive setup rebuilt per iteration (D1), same-transform-same-source recompute (D2), wide-copy-then-narrow read (D3), tiny-call per-call-overhead (D4), fixed-cost-floor over budget (D5), and an eroded scale-guard (D6) — each cross-linked to the verification gate that lands the fix safely. The leverage: a check that fires once has paid for itself on every future audit, so opportunities that used to take extended manual profiling get flagged automatically.
+- **`optimization-audit`** — an **equivalence discipline**: an optimization must be output-preserving (`ADR-004`). New `templates/equivalence-verification.md` (oracle test, whole-output production-scale compare, mutation-verify both directions, probe-first), loaded by a renamed Phase 12 ("Profiling, Benchmarking & Equivalence Posture"); a Phase 13 report classification (`optimization` vs `scope-decision`) plus a "Regressions / trade-offs accepted" section; Important Rules P1 (output-preserving vs scope-decision), P19 (a correctness fix gets its own cycle), P20 (diff as-built vs the approved plan).
+- **`optimization-audit`** — a **conditional Phase 11.5** (Numeric Reproducibility & Determinism) with `templates/numeric-reproducibility.md`: reduction-order sensitivity, dispatched fused-op (FMA) portability, shape-dependent BLAS/LAPACK batching, library-version-drift version-fence tests, substitution singularities, conditioning, and the redefine-the-reference-once exit (P5). Fires only on float-heavy / BLAS / compiled-kernel / numeric-golden code.
+- **`optimization-audit`** — measurement-rigor cues in Phase 12 (fixed-cost floor P9, warm-vs-cold P10, budget granularity P11, op-count guards P12, instrumentation no-op P13, noise floor P15, shape inventory P17, profiling posture P18); cache immutability + identity-keyed-cache staleness (P6); guard-authoring (shared threshold constant P23, wide-enough size-ladder P24) in `templates/algorithm-complexity.md`; new Phase 0 hazard greps for silent version-degradation (P7) and optimization-without-a-parity-test (P2); Phase 1 consumer-enumeration / blast-radius (P8).
+- **cross-skill** — `measure-before-optimize` points to `equivalence-verification.md` for a post-change output snapshot (timing is necessary, not sufficient); `unbiased-review` and `final-review` verify a byte-identical / no-flip optimization claim ran at production scale with any behavior-changing part separated out.
+- **`ADR-004`** — the output-preserving-optimization policy, enforced across all four skills.
+
 ### Changed
 
-- **repo** — split `docs/plans/` into `docs/specs/` (design + `-research.md` docs) and `docs/plans/` (`-plan.md`), with `docs/adrs/` unchanged, so the three planning-doc types are structurally distinct and a design doc no longer sits in a folder named "plans". Six docs moved via `git mv` (history-preserving); the staying plans' design-doc cross-references, the `optimization-audit` doc-scan table, the `.gitignore` comment, and the `test_agents_md_awareness` docstring were repointed. A guard test (`tests/test_docs_layout.py`) prevents regression. `docs/superpowers/` stays gitignored scratch. Docs are not in the shipped payload, so this carries no version bump. See `ADR-003`.
+- **repo** — split `docs/plans/` into `docs/specs/` (design + `-research.md` docs) and `docs/plans/` (`-plan.md`), with `docs/adrs/` unchanged, so the three planning-doc types are structurally distinct and a design doc no longer sits in a folder named "plans". Six docs moved via `git mv` (history-preserving); the staying plans' design-doc cross-references, the `optimization-audit` doc-scan table, the `.gitignore` comment, and the `test_agents_md_awareness` docstring were repointed. A guard test (`tests/test_docs_layout.py`) prevents regression. `docs/superpowers/` stays gitignored scratch. See `ADR-003`.
 
 ## [1.26.0] - 2026-08-29
 
@@ -350,7 +361,8 @@ The new anti-patterns provide grep-based early detection of this class of bug. F
 ### Fixed
 - Trailing newline in `architecture.html`
 
-[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.26.0...HEAD
+[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.27.0...HEAD
+[1.27.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.26.0...v1.27.0
 [1.26.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.25.0...v1.26.0
 [1.25.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.24.0...v1.25.0
 [1.24.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.23.0...v1.24.0

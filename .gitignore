@@ -26,3 +26,6 @@ __pycache__/
 # committed. Deliberately narrower than `docs/`: `docs/specs/`, `docs/plans/`
 # and `docs/adrs/` are tracked project history and must stay that way.
 docs/superpowers/
+
+# Serena (LSP/MCP) local cache — session scratch, never committed
+.serena/
