@@ -396,3 +396,15 @@ Brown, S. (2018-present). "The C4 Model for Visualising Software
 Architecture." https://c4model.com/
 Framework: C4 model (Context, Container, Component, Code).
 Tool: Structurizr DSL, the official C4 authoring notation.
+
+## research-discipline
+
+Rahimian, P. (2026). "Auditing Construct Validity in Agentic Decision
+Support with Sports Analytics Case Study." *KDD Workshop on Evaluation
+and Trustworthiness of Agentic AI (KDD-WS-AgenticEval '26),* ACM.
+Taxonomy: the E1-E6 metric-design anti-patterns (cited for the taxonomy
+only; E7 is an in-house observability extension).
+
+Landis, J.R. & Koch, G.G. (1977). "The Measurement of Observer Agreement
+for Categorical Data." *Biometrics,* 33(1), 159-174.
+Bands: kappa interpretation thresholds for inter-rater agreement.

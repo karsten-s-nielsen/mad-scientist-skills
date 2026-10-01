@@ -80,12 +80,13 @@ The Markdown body should include, in order:
 
 ## Skill Categories
 
-mad-scientist-skills contains two categories of skills plus a review gate:
+mad-scientist-skills contains three categories of skills plus a review gate:
 
 | Category | When it fires | Examples | Output |
 |---|---|---|---|
 | **Retrospective audit** | After code exists — "audit this codebase for X" | `architecture-audit`, `cognitive-interface-audit`, `documentation-audit`, `observability-audit`, `optimization-audit`, `security-audit` | Prioritised findings report |
 | **Pre-change gate** | Before a code change — "about to modify this function" | `measure-before-optimize` (peer to `optimization-audit`) | Before/after delta, regression flag |
+| **Working / pre-registration discipline** | While doing research — "design/validate a metric", "pre-register an analysis" | `research-discipline` | Pre-registered checklist; no findings report |
 | **Review gate** | After a change, before commit — "final review before shipping"; or reviewing an artifact authored by another session | `final-review`, `unbiased-review` | Structured checklist / severity-ranked findings |
 
 When adding a new skill, decide its category first. Retrospective audits and pre-change gates often come in **peer pairs** (e.g., `measure-before-optimize` ↔ `optimization-audit`): the pre-change gate captures a baseline and prevents regressions; the retrospective audit finds issues in code that already exists. A peer pair must have **distinct trigger descriptions** so the Skill tool can select between them without ambiguity — `measure-before-optimize`'s description begins with "Pre-change measurement gate," while `optimization-audit`'s begins with "Comprehensive optimization audit."

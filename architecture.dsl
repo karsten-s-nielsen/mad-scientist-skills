@@ -1,9 +1,9 @@
-workspace "mad-scientist-skills" "Claude Code plugin providing architecture auditing, C4 architecture diagrams, cognitive interface auditing, security auditing, observability auditing, optimization auditing, pre-change measurement gating, documentation auditing, pre-commit quality gates, and non-author artifact review" {
+workspace "mad-scientist-skills" "Claude Code plugin providing architecture auditing, C4 architecture diagrams, cognitive interface auditing, security auditing, observability auditing, optimization auditing, pre-change measurement gating, documentation auditing, pre-commit quality gates, non-author artifact review, and research-discipline (pre-registration metric discipline)" {
 
     model {
         developer = person "Developer" "Uses Claude Code for software engineering tasks"
 
-        plugin = softwareSystem "mad-scientist-skills" "Claude Code plugin of ten skills: architecture, cognitive-interface, security, observability, optimization, documentation audits, C4 diagrams, measurement and pre-commit gates, and non-author review" {
+        plugin = softwareSystem "mad-scientist-skills" "Claude Code plugin of eleven skills: six retrospective audits, C4 diagrams, a pre-change measurement gate, pre-commit and non-author review gates, and a research pre-registration discipline" {
             architectureAuditSkill = container "architecture-audit Skill" "Architecture audit covering Hexagonal/Ports & Adapters, DDD bounded contexts, Clean Architecture, SOLID, coupling/cohesion, CQRS, Event Sourcing, Twelve-Factor, API-First, and ADRs (beta)" "SKILL.md"
             c4Skill = container "c4 Skill" "Generates interactive C4 architecture diagrams from Structurizr DSL" "SKILL.md, c4_assemble.py, 5 templates"
             cognitiveAuditSkill = container "cognitive-interface-audit Skill" "Cognitive interface audit: Norman's Gulfs, GOMS, Wood error tolerance, NASA-TLX load, Kirk and Cleveland & McGill visualization integrity, trust calibration, Gestalt, EID, and accessibility" "SKILL.md, 5 templates"
@@ -11,7 +11,8 @@ workspace "mad-scientist-skills" "Claude Code plugin providing architecture audi
             finalReviewSkill = container "final-review Skill" "Pre-commit quality gate that reviews code, docs, and generates architecture diagrams" "SKILL.md"
             measureBeforeOptimizeSkill = container "measure-before-optimize Skill" "Pre-change measurement gate for perf-sensitive functions: captures pytest-benchmark baseline, gates on regression threshold, reports delta against budget. Peer to optimization-audit." "SKILL.md"
             observabilityAuditSkill = container "observability-audit Skill" "Two-tier observability audit covering instrumentation, logging, metrics, tracing, pipeline/ML monitoring, alerting, and SLIs/SLOs (beta)" "SKILL.md, 7 templates"
-            optimizationAuditSkill = container "optimization-audit Skill" "Single-tier optimization audit covering algorithm efficiency, database queries, caching, concurrency, pipelines, distributed execution, cloud cost, profiling, output-preserving equivalence verification, numeric reproducibility, and the D1-D6 detection catalog" "SKILL.md, 10 templates"
+            optimizationAuditSkill = container "optimization-audit Skill" "Single-tier optimization audit: algorithms, queries, caching, concurrency, pipelines, distributed execution, cloud cost, profiling, equivalence, numeric reproducibility, and the D1-D6 catalog" "SKILL.md, 10 templates"
+            researchDisciplineSkill = container "research-discipline Skill" "Pre-registration discipline: the E1-E7 metric-design anti-patterns, a validity ladder (construct, face, predictive, robustness), and a multi-pass review protocol" "SKILL.md, references/"
             securityAuditSkill = container "security-audit Skill" "Two-tier security audit covering STRIDE (incl. cross-org boundaries), OWASP Top 10, ML/AI model security, AI regulatory compliance, infrastructure (incl. confidential computing), and supply chain" "SKILL.md, 6 templates"
             unbiasedReviewSkill = container "unbiased-review Skill" "Non-author review of a spec, plan, or implementation from another session: verifies claims vs the repo, grades TDD and hexagonal discipline, reports severity-ranked findings without writing the fix" "SKILL.md, references/, 4 commands"
         }
@@ -30,6 +31,7 @@ workspace "mad-scientist-skills" "Claude Code plugin providing architecture audi
         claudeCode -> measureBeforeOptimizeSkill "Invokes" "/mad-scientist-skills:measure-before-optimize"
         claudeCode -> observabilityAuditSkill "Invokes" "/mad-scientist-skills:observability-audit"
         claudeCode -> optimizationAuditSkill "Invokes" "/mad-scientist-skills:optimization-audit"
+        claudeCode -> researchDisciplineSkill "Invokes" "/mad-scientist-skills:research-discipline"
         claudeCode -> securityAuditSkill "Invokes" "/mad-scientist-skills:security-audit"
         claudeCode -> unbiasedReviewSkill "Invokes" "/mad-scientist-skills:unbiased-review"
         unbiasedReviewSkill -> finalReviewSkill "Severity maps onto" "Interoperable reports"

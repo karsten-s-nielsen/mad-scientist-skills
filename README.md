@@ -3,10 +3,10 @@
 ![Mad Scientist Skills](assets/mad-scientist.jpg)
 
 [![CI](https://github.com/karsten-s-nielsen/mad-scientist-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/karsten-s-nielsen/mad-scientist-skills/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.27.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.28.0-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills are slash-command capabilities that extend Claude Code with specialized knowledge. Install this plugin to get 10 skills for architecture auditing, architecture diagramming, code security analysis, performance optimization, pre-change measurement gating, observability assessment, documentation evaluation, cognitive interface review, pre-commit quality checks, and non-author artifact review.
+[Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills are slash-command capabilities that extend Claude Code with specialized knowledge. Install this plugin to get 11 skills for architecture auditing, architecture diagramming, code security analysis, performance optimization, pre-change measurement gating, observability assessment, documentation evaluation, cognitive interface review, pre-commit quality checks, non-author artifact review, and research-discipline (pre-registration metric discipline).
 
 ## Skills
 
@@ -20,6 +20,7 @@
 | **measure-before-optimize** | Pre-change measurement gate for perf-sensitive functions — captures baseline and verifies regression stays within threshold | `/mad-scientist-skills:measure-before-optimize` |
 | **observability-audit** | Assess monitoring maturity across logging, metrics, tracing, alerting, and SLI/SLO coverage | `/mad-scientist-skills:observability-audit` |
 | **optimization-audit** | Find performance bottlenecks in algorithms, queries, caching, concurrency, and cloud cost | `/mad-scientist-skills:optimization-audit` |
+| **research-discipline** | Pre-register the E1–E7 metric-design anti-patterns, the validity ladder, and the multi-pass review protocol when designing, validating, or shipping a quantitative research claim | `/mad-scientist-skills:research-discipline` |
 | **security-audit** | Identify vulnerabilities via threat modeling, code scanning, dependency audit, and infrastructure review | `/mad-scientist-skills:security-audit` |
 | **unbiased-review** | Review a spec, plan, or implementation written by another session — verify its claims against the repo, grade TDD/hexagonal discipline, report severity-ranked findings without writing the fix | `/mad-scientist-skills:unbiased-review` |
 
@@ -418,6 +419,39 @@ Ask naturally ("Optimization audit this project", "Find bottlenecks", "Performan
 
 ```
 /mad-scientist-skills:optimization-audit
+```
+
+</details>
+
+<details>
+<summary><strong>research-discipline</strong> — Working / Pre-Registration Discipline (E1–E7 anti-patterns, validity ladder, multi-pass review)</summary>
+
+A portable, public-cite-safe checklist for building, validating, reviewing, and shipping quantitative football-analytics claims — metrics, models, rankings, research write-ups. Loaded *while* doing the research as a pre-registration gate; it produces a kept checklist, not a findings report. The plugin's first **working / pre-registration discipline** (`ADR-005`).
+
+### When to use
+
+- Designing or validating a metric, model, or ranking
+- Pre-registering an analysis (freezing the direction and decision rule before seeing the numbers)
+- Before shipping a research claim or write-up to a paper, deck, post, or proposal
+- Scrutinising a research metric or empirical claim for soundness
+
+### What it carries
+
+- **E1–E7 metric-design anti-patterns** (E1–E6 from Rahimian 2026; E7 an in-house observability extension) — clear all seven before a metric is called validated
+- **The validity ladder** — construct → face → predictive → robustness, with pre-registration
+- **The multi-pass review protocol** — ≥3 independent passes, agreement reported, model id + version pinned
+- **`references/`** — validation/statistics, attribution/identifiability, data-quality preflight, reproducibility/provenance, reviewing, and a pre-ship defect smell-test, plus sources
+
+### No command
+
+Loaded while working, not a slash workflow — select it by description; there is no `commands/` entry.
+
+### Usage
+
+Ask naturally ("Is this metric sound?", "Pre-register this analysis", "Design a metric for X") or invoke directly:
+
+```
+/mad-scientist-skills:research-discipline
 ```
 
 </details>
