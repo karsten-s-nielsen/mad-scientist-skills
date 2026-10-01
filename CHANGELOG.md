@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.28.0] - 2026-10-01
+
+### Added
+
+- **`research-discipline`** — a new skill, the plugin's first **working / pre-registration discipline** (`ADR-005`): a portable, public-cite-safe checklist for building, validating, reviewing, and shipping quantitative football-analytics claims (metrics, models, rankings, research write-ups). `SKILL.md` carries the **E1–E7 metric-design anti-patterns** (E1–E6 from Rahimian 2026; E7 an in-house observability extension), the compact **validity ladder** (construct → face → predictive → robustness), and the compact **multi-pass review protocol**; `references/` carries the detailed validation/statistics, attribution/identifiability, data-quality preflight, reproducibility/provenance, reviewing, and pre-ship defect-smell-test material, plus `sources.md`. It is loaded *while* doing research and produces a kept checklist, not a findings report — so it does not fit the existing audit/review categories (`ADR-005` adds the fourth category; `CONTRIBUTING.md` records it).
+- **Attribution** — a `## research-discipline` section in `NOTICE.md` (Rahimian 2026 for the E1–E6 taxonomy; Landis & Koch 1977 for the κ interpretation bands).
+- **Content guard** — `tests/skills/research-discipline/test_content_guard.py` locks the load-bearing invariants: E1–E7 present and one-line each, the ladder and multi-pass sections present, the seven reference files and the NOTICE section in place, the sources citing both works, and public-cite-safety (no bare percentage anywhere in the shipped skill).
+
 ## [1.27.0] - 2026-09-29
 
 ### Added
@@ -361,7 +369,8 @@ The new anti-patterns provide grep-based early detection of this class of bug. F
 ### Fixed
 - Trailing newline in `architecture.html`
 
-[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.27.0...HEAD
+[Unreleased]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.28.0...HEAD
+[1.28.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.27.0...v1.28.0
 [1.27.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.26.0...v1.27.0
 [1.26.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.25.0...v1.26.0
 [1.25.0]: https://github.com/karsten-s-nielsen/mad-scientist-skills/compare/v1.24.0...v1.25.0
